@@ -127,6 +127,95 @@ capacitor.config.ts
 
 ---
 
+## Arquitetura
+
+Fluxo em tempo de execução — quem chama quem. O **núcleo do jogo** (`game/`) é
+TypeScript puro e não conhece React, DOM nem áudio; tudo à sua volta é casca.
+
+```mermaid
+flowchart TD
+    subgraph SHELL["Casca — React + Vite + Tailwind"]
+        HTML["index.html"] --> MAIN["main.tsx"] --> APP["App.tsx (wouter)"]
+        APP --> HOME["pages/Home.tsx"]
+        APP --> NF["pages/NotFound.tsx"]
+        HOME --> GC["components/GameCanvas.tsx"]
+        HOME --> UIP["components/ui/*"]
+        CSS["index.css (Tailwind v4)"]
+    end
+
+    subgraph CORE["Núcleo do jogo — TypeScript puro, sem React/DOM"]
+        WORLD["game-world.ts (GameWorld)"]
+        TYPES["types.ts"]
+        PIECES["pieces.ts"]
+        RNG["rng.ts"]
+        DAILY["daily.ts"]
+        MODS["modifiers.ts"]
+        WORLD --> TYPES
+        WORLD --> PIECES
+        WORLD --> MODS
+        PIECES --> RNG
+        DAILY --> RNG
+    end
+
+    subgraph FEEDBACK["Feedback (APIs do navegador)"]
+        REND["renderer.ts (canvas 2D)"]
+        SFX["sfx.ts (Web Audio)"]
+        MUSIC["music.ts (Web Audio)"]
+        HAPT["haptics.ts (vibrate)"]
+    end
+
+    subgraph INPUT["Entrada + estado local"]
+        CTRL["controls.ts (localStorage)"]
+        TOUCH["touch-controls.ts"]
+        SCEN["scenarios.ts"]
+        LB["local-leaderboard.ts (localStorage)"]
+    end
+
+    subgraph NATIVE["Capacitor — só no APK (no-op na web)"]
+        NAT["mobile/native.ts"] --> ADS["mobile/ads.ts"] --> PLUG(["@capacitor-community/admob"])
+    end
+
+    CSS -.->|estilo| GC
+    GC --> REND
+    REND --> WORLD
+    GC --> DAILY
+    GC --> CTRL
+    GC --> TOUCH
+    GC --> SCEN
+    GC --> SFX
+    GC --> MUSIC
+    GC --> HAPT
+    HOME --> LB
+    HOME --> SCEN
+    HOME --> NAT
+```
+
+Empacotamento e entrega:
+
+```mermaid
+flowchart LR
+    SRC["client/src + client/public"] --> VITE["vite build"] --> DIST["dist/"]
+    DIST --> SYNC["npx cap sync android"] --> AND["android/ (gerado, não versionado)"]
+    POST["scripts/android-postsync.mjs<br/>AdMob App ID · versionCode · signingConfig"] --> AND
+    AND --> GRADLE["Gradle"]
+    GRADLE --> APK["APK debug<br/>workflow android-build"]
+    GRADLE --> AAB["AAB assinado<br/>workflow android-release → Play Store"]
+    ENV["client/.env.androidrelease (VITE_ADS_TESTING=false)"] -.->|modo androidrelease| VITE
+```
+
+### Por linguagem
+
+| Linguagem | Onde | Peso aprox. |
+| --- | --- | --- |
+| **TypeScript** (`.ts` / `.tsx`) | todo `client/src/` — UI, núcleo do jogo, mobile | ~65% |
+| **CSS** | `client/src/index.css` (Tailwind v4 + HUD, layout mobile) | ~29% |
+| **HTML** | `client/index.html`, `client/public/privacy.html` | ~2% |
+| **YAML** | `.github/workflows/` (CI) | ~2% |
+| **JavaScript (Node)** | `scripts/android-postsync.mjs` | ~1% |
+| **Groovy / Java / Kotlin** | `android/` — gerado pelo Capacitor, **não versionado** | — |
+
+---
+
 ## Publicar na Play Store (Android)
 
 Requer **JDK 21** (Capacitor 7). O build nativo pode ser feito no **GitHub
