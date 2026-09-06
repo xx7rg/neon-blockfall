@@ -4,10 +4,19 @@
 
 # Neon Blockfall
 
-**Jogo arcade de blocos que caem — 100% offline, sem servidor, sem login, sem coleta própria de dados.**
-Recordes e preferências ficam apenas no dispositivo.
+**Jogo arcade de blocos que caem. Jogável offline; ranking online para disputar com amigos.**
 
-Publicado por **x7rG ENTERPRISE** · Android
+![plataforma](https://img.shields.io/badge/plataforma-Android-3DDC84?logo=android&logoColor=white)
+![Capacitor](https://img.shields.io/badge/Capacitor-7-119EFF?logo=capacitor&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![vers%C3%A3o](https://img.shields.io/badge/vers%C3%A3o-1.0.0-8A2BE2)
+![idioma](https://img.shields.io/badge/idioma-pt--BR-2E8B57)
+![ranking](https://img.shields.io/badge/ranking-Google_Play_Games-EA4335?logo=googleplay&logoColor=white)
+![licen%C3%A7a](https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-orange)
+
+Publicado por **x7rG ENTERPRISE**
 
 </div>
 
@@ -42,10 +51,12 @@ Publicado por **x7rG ENTERPRISE** · Android
 | Anúncios | **@capacitor-community/admob** | 7 | Banner + intersticial (só no build nativo) |
 | Gerenciador de pacotes | **pnpm** | 10 | `node-linker=hoisted` (drive exFAT) |
 | CI | **GitHub Actions** | — | APK de teste + AAB assinado na nuvem |
+| Ranking online | **Google Play Games Services** | — | Placar global e de amigos (login com conta Google) |
 
-Sem engine 3D, sem backend, sem framework de UI pesado. O núcleo do jogo
+Sem engine 3D, sem backend próprio, sem framework de UI pesado. O núcleo do jogo
 (`client/src/game/`) é **TypeScript puro**, sem depender de React nem do canvas —
-por isso dá para testá-lo isoladamente com Vitest.
+por isso dá para testá-lo isoladamente com Vitest. O jogo funciona **offline**; o
+**ranking online** usa o Google Play Games (não há servidor próprio).
 
 ---
 
@@ -80,6 +91,8 @@ por isso dá para testá-lo isoladamente com Vitest.
   `BLACKOUT` (as 3 linhas de baixo no escuro). **Checkpoints** nas fases múltiplas de 5.
 - **Desafio do Dia:** semente fixa — mesma sequência de peças para todo mundo no dia —
   com melhor pontuação do dia salva no aparelho e botão de compartilhar.
+- **Ranking online:** placar global e **de amigos** via Google Play Games (o jogador
+  entra com a conta Google que já tem no aparelho). Placar local no aparelho como base.
 - **Cenários** visuais (Mega City, Orbital Ring, Quantum Core, Data Vault) com efeitos
   de fundo próprios; não alteram a física.
 - **Lock delay** (~0,5 s, com reset ao mover) e **DAS/ARR** no teclado e no toque.
@@ -130,17 +143,28 @@ Actions** (sem Android Studio local).
    `ANDROID_KEY_PASSWORD`.
 4. **Gerar o `.aab`** — aba **Actions → Android AAB (release assinado) → Run
    workflow**. O artefato `neon-blockfall-release-aab` é o que sobe na Play Console.
-5. **Ficha da loja** — política de privacidade publicada em `/privacy.html`;
-   formulário *Data Safety* deve declarar coleta do *ID de publicidade* (AdMob).
+5. **Play Games Services** — no console do Play Games, vincular o app, criar o
+   leaderboard e cadastrar o **SHA-1** do keystore. O ID do leaderboard vai no código.
+6. **Ficha da loja** — política de privacidade publicada em `/privacy.html`;
+   formulário *Data Safety* deve declarar coleta do *ID de publicidade* (AdMob) e,
+   com o ranking online, o login pelo Google Play Games.
 
 ---
 
 ## Privacidade
 
-O jogo não coleta dados pessoais. O build nativo exibe anúncios do Google AdMob,
-que processa dados de publicidade do dispositivo — detalhes e base legal (LGPD) em
-[`client/public/privacy.html`](client/public/privacy.html). Em regiões que exigem
-consentimento, o app mostra o formulário do UMP antes de anúncios personalizados.
+O jogo em si não coleta dados pessoais e é jogável offline. Dois pontos usam
+serviços do Google:
+
+- **Anúncios (AdMob):** o build nativo exibe anúncios que processam dados de
+  publicidade do dispositivo. Em regiões que exigem consentimento, o app mostra o
+  formulário do UMP antes de anúncios personalizados.
+- **Ranking online (Play Games):** ao entrar no placar de amigos, o jogador se
+  autentica com a conta Google do aparelho; o Google gerencia essa identidade e a
+  pontuação enviada.
+
+Detalhes e base legal (LGPD) em
+[`client/public/privacy.html`](client/public/privacy.html).
 
 ---
 
