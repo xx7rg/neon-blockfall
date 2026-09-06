@@ -174,6 +174,6 @@ Detalhes e base legal (LGPD) em
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-rgds-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rgds)
 &nbsp;
-[![Instagram](https://img.shields.io/badge/Instagram-@rgds-E4405F?logo=instagram&logoColor=white)](https://instagram.com/rgds)
+[![Instagram](https://img.shields.io/badge/Instagram-%40__7ragnar-E4405F?logo=instagram&logoColor=white)](https://www.instagram.com/_7ragnar/)
 
 </div>
