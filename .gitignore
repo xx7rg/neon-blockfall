@@ -1,0 +1,40 @@
+# Dependencies
+**/node_modules
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.*.local
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Capacitor native projects (regenerated with `pnpm android:add` + `cap sync`)
+/android
+/ios
+
+# Assinatura Android — NUNCA versionar
+*.jks
+*.keystore
+keystore.properties
+*.base64.txt
+
+# Perfis temporários de captura de tela
+.shotprofile/

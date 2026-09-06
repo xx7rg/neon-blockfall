@@ -1,0 +1,68 @@
+name: Android APK (debug)
+
+# Gera um APK de teste na nuvem — sem precisar de Android Studio local.
+# Depois do build, baixe o artefato "neon-blockfall-debug-apk" e instale no
+# celular (ative "Fontes desconhecidas").
+# Este APK usa o App ID real do AdMob (senão o app fecha ao abrir) mas ANÚNCIOS
+# DE TESTE (pnpm build => modo normal => IS_TESTING=true). Pode tocar à vontade.
+# O build de produção (anúncios reais) é `pnpm android:release` / bundleRelease.
+# NÃO é assinado para a Play Store.
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web
+        run: pnpm build
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Apply native tweaks (AdMob App ID etc.)
+        run: node scripts/android-postsync.mjs
+
+      - name: Point Gradle at the SDK
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-blockfall-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+# Para um .aab ASSINADO de Play Store: adicione um keystore em segredos do repo
+# (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD), decodifique-o
+# no runner, configure signingConfigs em android/app/build.gradle e rode
+# `./gradlew bundleRelease`.
