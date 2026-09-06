@@ -172,4 +172,8 @@ Detalhes e base legal (LGPD) em
 
 **© 2026 x7rG ENTERPRISE** — Todos os direitos reservados.
 
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-rgds-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rgds)
+&nbsp;
+[![Instagram](https://img.shields.io/badge/Instagram-@rgds-E4405F?logo=instagram&logoColor=white)](https://instagram.com/rgds)
+
 </div>
