@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/x7rg-enterprise-logo.png" alt="x7rG ENTERPRISE" width="220" />
+<img src="Logo/x7rg.png" alt="x7rG ENTERPRISE" width="260" />
 
 # Neon Blockfall
 
