@@ -116,8 +116,8 @@ capacitor.config.ts
 
 ## Publicar na Play Store (Android)
 
-Requer **JDK 17**. O build nativo pode ser feito no **GitHub Actions** (sem
-Android Studio local).
+Requer **JDK 21** (Capacitor 7). O build nativo pode ser feito no **GitHub
+Actions** (sem Android Studio local).
 
 1. **Anúncios** — já configurados em `client/src/mobile/ads.ts` com os IDs reais.
    `pnpm build` usa anúncios de teste; `pnpm android:release` (modo
