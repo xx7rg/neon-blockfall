@@ -944,7 +944,10 @@ export default function GameCanvas({
           <div className="deck-message">
             <Sparkles size={15} /> COMPLETE A LINHA. ACENDA O CIRCUITO.
           </div>
-          <div className="version-label">x7rG ENTERPRISE™ · NB v1.2.0</div>
+          <div className="version-label">
+            x7rG ENTERPRISE™ · NB v{__APP_VERSION__}
+            {import.meta.env.MODE === "androidrelease" ? "" : " · TESTE"}
+          </div>
         </footer>
       </div>
 
