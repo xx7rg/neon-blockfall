@@ -47,6 +47,12 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Gerar ícones e splash (resources/ -> android/)
+        run: >
+          npx -y @capacitor/assets@3 generate --android
+          --iconBackgroundColor "#050914" --iconBackgroundColorDark "#050914"
+          --splashBackgroundColor "#050914" --splashBackgroundColorDark "#050914"
+
       - name: Restore keystore + keystore.properties
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

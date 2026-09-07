@@ -4,6 +4,8 @@
 
 # Neon Blockfall
 
+<img src="store-assets/feature-graphic.png" alt="Neon Blockfall" width="640" />
+
 **Jogo arcade de blocos que caem. Jogável offline; ranking online para disputar com amigos.**
 
 ![plataforma](https://img.shields.io/badge/plataforma-Android-3DDC84?logo=android&logoColor=white)
@@ -117,6 +119,8 @@ client/
     mobile/           bootstrap nativo + integração AdMob (no-op no web)
     pages/            Home (casca da partida) + NotFound
     index.css
+resources/            fonte dos ícones/splash (icon*.png, splash*.png) — usada por @capacitor/assets
+store-assets/         ícone 512, feature graphic 1024×500, textos da ficha da loja
 scripts/
   android-postsync.mjs   ajustes nativos idempotentes (AdMob App ID, versão, assinatura)
 .github/workflows/
@@ -226,6 +230,8 @@ Actions** (sem Android Studio local).
    `androidrelease`, arquivo `client/.env.androidrelease`) usa os reais.
 2. **App ID do AdMob** — aplicado automaticamente no `AndroidManifest.xml` por
    `scripts/android-postsync.mjs` após cada `cap sync`.
+   **Ícone e splash** também são gerados no CI a partir de `resources/`
+   (`@capacitor/assets`) — nada de mexer no `android/` à mão.
 3. **Assinatura** — gere um keystore (`keytool -genkeypair ...`), guarde-o em
    lugar seguro (fora do repositório) e cadastre 4 segredos no GitHub:
    `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
@@ -234,9 +240,11 @@ Actions** (sem Android Studio local).
    workflow**. O artefato `neon-blockfall-release-aab` é o que sobe na Play Console.
 5. **Play Games Services** — no console do Play Games, vincular o app, criar o
    leaderboard e cadastrar o **SHA-1** do keystore. O ID do leaderboard vai no código.
-6. **Ficha da loja** — política de privacidade publicada em `/privacy.html`;
-   formulário *Data Safety* deve declarar coleta do *ID de publicidade* (AdMob) e,
-   com o ranking online, o login pelo Google Play Games.
+6. **Ficha da loja** — textos, ícone 512, feature graphic e checklist de
+   classificação/Data Safety prontos em
+   [`store-assets/play-store-listing.md`](store-assets/play-store-listing.md).
+   A política de privacidade precisa estar numa **URL pública** (o `privacy.html`
+   está no app; publique também via GitHub Pages ou host equivalente).
 
 ---
 

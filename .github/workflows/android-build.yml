@@ -49,6 +49,12 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Gerar ícones e splash (resources/ -> android/)
+        run: >
+          npx -y @capacitor/assets@3 generate --android
+          --iconBackgroundColor "#050914" --iconBackgroundColorDark "#050914"
+          --splashBackgroundColor "#050914" --splashBackgroundColorDark "#050914"
+
       - name: Apply native tweaks (AdMob App ID etc.)
         run: node scripts/android-postsync.mjs
 

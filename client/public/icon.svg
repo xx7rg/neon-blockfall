@@ -1,7 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#050914" />
-  <rect x="14" y="30" width="12" height="12" rx="2" fill="#65f3ff" />
-  <rect x="26" y="30" width="12" height="12" rx="2" fill="#65f3ff" />
-  <rect x="26" y="18" width="12" height="12" rx="2" fill="#ff2ea6" />
-  <rect x="38" y="30" width="12" height="12" rx="2" fill="#65f3ff" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Neon Blockfall">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="34%" r="75%">
+      <stop offset="0%" stop-color="#0f2036"/>
+      <stop offset="100%" stop-color="#05070d"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3ae8ff" stop-opacity="0.30"/>
+      <stop offset="60%" stop-color="#3ae8ff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#3ae8ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="0" fill="url(#bg)"/>
+  <circle cx="240" cy="256" r="210" fill="url(#glow)"/>
+  <g stroke-width="9">
+    <rect x="150" y="106" width="118" height="118" rx="26" fill="#159fc2" stroke="#7df3ff"/>
+    <rect x="150" y="234" width="118" height="118" rx="26" fill="#159fc2" stroke="#7df3ff"/>
+    <rect x="150" y="362" width="118" height="118" rx="26" fill="#159fc2" stroke="#7df3ff"/>
+    <rect x="278" y="362" width="118" height="118" rx="26" fill="#961e60" stroke="#ff78c8"/>
+  </g>
+  <g fill="#ffffff" opacity="0.28">
+    <rect x="166" y="122" width="86" height="24" rx="12"/>
+    <rect x="166" y="250" width="86" height="24" rx="12"/>
+    <rect x="166" y="378" width="86" height="24" rx="12"/>
+    <rect x="294" y="378" width="86" height="24" rx="12"/>
+  </g>
 </svg>

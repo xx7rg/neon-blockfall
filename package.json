@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Jogo arcade de blocos que caem — 100% offline. Publicado por x7rG ENTERPRISE.",
+  "description": "Jogo arcade de blocos que caem. Jogável offline, com ranking online. Publicado por x7rG ENTERPRISE.",
   "author": "x7rG ENTERPRISE",
   "license": "UNLICENSED",
   "scripts": {
@@ -13,10 +13,11 @@
     "check": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
+    "assets": "npx -y @capacitor/assets@3 generate --android --iconBackgroundColor \"#050914\" --iconBackgroundColorDark \"#050914\" --splashBackgroundColor \"#050914\" --splashBackgroundColorDark \"#050914\"",
     "cap:sync": "vite build && cap sync && node scripts/android-postsync.mjs",
-    "android:add": "cap add android",
-    "android:open": "vite build && cap sync && node scripts/android-postsync.mjs && cap open android",
-    "android:release": "vite build --mode androidrelease && cap sync && node scripts/android-postsync.mjs && cap open android"
+    "android:add": "cap add android && pnpm assets",
+    "android:open": "vite build && cap sync && pnpm assets && node scripts/android-postsync.mjs && cap open android",
+    "android:release": "vite build --mode androidrelease && cap sync && pnpm assets && node scripts/android-postsync.mjs && cap open android"
   },
   "dependencies": {
     "@capacitor-community/admob": "^7.0.3",
