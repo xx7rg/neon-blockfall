@@ -18,7 +18,7 @@
 ![ranking](https://img.shields.io/badge/ranking-Google_Play_Games-EA4335?logo=googleplay&logoColor=white)
 ![licen%C3%A7a](https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-orange)
 
-Publicado por **x7rG ENTERPRISE®**
+Publicado por **x7rG ENTERPRISE™**
 
 </div>
 
@@ -269,7 +269,7 @@ Detalhes e base legal (LGPD) em
 
 <div align="center">
 
-**© 2026 x7rG ENTERPRISE®** — Todos os direitos reservados. x7rG ENTERPRISE® é marca registrada.
+**© 2026 x7rG ENTERPRISE™** — Todos os direitos reservados.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rgds)
 &nbsp;

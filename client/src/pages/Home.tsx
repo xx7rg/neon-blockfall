@@ -639,7 +639,7 @@ export default function Home() {
               <a href="/privacy.html" target="_blank" rel="noopener noreferrer">
                 POLÍTICA DE PRIVACIDADE
               </a>
-              <span>© 2026 x7rG ENTERPRISE® — marca registrada</span>
+              <span>© 2026 x7rG ENTERPRISE™</span>
             </div>
             {settingsMessage && <div className="sync-note">{settingsMessage}</div>}
             <button type="button" className="action-button primary settings-done" onClick={closeSettings}>
