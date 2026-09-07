@@ -18,7 +18,7 @@
 ![ranking](https://img.shields.io/badge/ranking-Google_Play_Games-EA4335?logo=googleplay&logoColor=white)
 ![licen%C3%A7a](https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-orange)
 
-Publicado por **x7rG ENTERPRISE**
+Publicado por **x7rG ENTERPRISE®**
 
 </div>
 
@@ -243,8 +243,10 @@ Actions** (sem Android Studio local).
 6. **Ficha da loja** — textos, ícone 512, feature graphic e checklist de
    classificação/Data Safety prontos em
    [`store-assets/play-store-listing.md`](store-assets/play-store-listing.md).
-   A política de privacidade precisa estar numa **URL pública** (o `privacy.html`
-   está no app; publique também via GitHub Pages ou host equivalente).
+   Política de privacidade pública:
+   <https://xx7rg.github.io/neon-blockfall-privacy/>
+   (repo público [`neon-blockfall-privacy`](https://github.com/xx7rg/neon-blockfall-privacy),
+   espelho do `client/public/privacy.html`).
 
 ---
 
@@ -267,7 +269,7 @@ Detalhes e base legal (LGPD) em
 
 <div align="center">
 
-**© 2026 x7rG ENTERPRISE** — Todos os direitos reservados.
+**© 2026 x7rG ENTERPRISE®** — Todos os direitos reservados. x7rG ENTERPRISE® é marca registrada.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rgds)
 &nbsp;

@@ -56,7 +56,7 @@ Data Vault). Efeitos e trilha sintetizados em tempo real.
 
 Sem cadastro, sem paywall. Contém anúncios.
 
-Publicado por x7rG ENTERPRISE.
+Publicado por x7rG ENTERPRISE® — marca registrada.
 ```
 
 ---
@@ -70,8 +70,9 @@ Publicado por x7rG ENTERPRISE.
 | Contém anúncios | Sim (Google AdMob) |
 | Compras no app | Não |
 | Público-alvo | 13+ (não direcionado a crianças) |
-| Site | (URL da política de privacidade hospedada) |
+| Política de privacidade | https://xx7rg.github.io/neon-blockfall-privacy/ |
 | E-mail de contato | contato.rgsantos@gmail.com |
+| Desenvolvedor | x7rG ENTERPRISE® (marca registrada) |
 
 ## Classificação de conteúdo (questionário IARC)
 
