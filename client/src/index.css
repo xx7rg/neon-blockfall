@@ -1274,6 +1274,75 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
   }
 }
 
+/* ============================================================================
+   COMPOSIÇÃO UNIFICADA (desktop, laptop, tablet, celular em modo desktop).
+   Mesma estrutura do retrato: coluna que preenche a viewport, a arena cresce
+   para ocupar todo o espaço livre acima dos controles — sem faixa morta.
+   Telas largas só ganham largura máxima e ficam centradas. `min-height` (não
+   `height`) para o placar/conquistas continuarem roláveis abaixo da dobra.
+   min-height:620px exclui celulares em paisagem (que têm layout lado a lado).
+   ========================================================================== */
+@media (min-width: 641px) and (min-height: 620px) {
+  .game-shell { min-height: 100vh; min-height: 100dvh; }
+  .game-ui {
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 520px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .game-stage {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    transform: none !important;
+    padding-top: 6px !important;
+  }
+  .arena-column {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .arena-viewport {
+    flex: 1 1 auto !important;
+    min-height: min(58vh, 620px) !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 500px !important;
+  }
+  .arena-caption, .arena-footer { width: min(100%, 500px) !important; }
+  .control-deck { position: static !important; inset: auto !important; flex: 0 0 auto !important; }
+
+  /* HUD compacto igual ao retrato: só PONTOS + RESERVA + PRÓXIMAS numa linha.
+     Fase/linhas ficam na topbar; placar e conquistas na gaveta (botão troféu). */
+  .hud-rail {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+  .hud-rail > * { flex: 0 0 auto !important; width: auto !important; }
+  .hud-card.command-card,
+  .hud-card.metrics-card,
+  .hud-card .card-label,
+  .score-rule, .record-row, .record-badge, .rail-actions { display: none !important; }
+  .score-card { flex: 0 0 auto !important; }
+  .queue-card { flex: 1 1 auto !important; min-width: 0 !important; }
+  .topbar-lines { display: inline !important; }
+}
+
 /* Contraste dos botões do tutorial (estavam quase invisíveis). */
 .tutorial-actions .action-button,
 .tutorial-actions .action-button.primary {
