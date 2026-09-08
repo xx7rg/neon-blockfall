@@ -430,6 +430,18 @@ export function createGameRenderer(
   const onResize = () => resize();
   window.addEventListener("resize", onResize);
 
+  // A arena é dimensionada por flexbox/svh e pode mudar de tamanho sem um
+  // "resize" de janela (fonte carregando, barra de URL recolhendo, gaveta
+  // abrindo, rotação). Sem isto o tabuleiro fica preso na 1ª medição.
+  let frameObserver: ResizeObserver | undefined;
+  if (typeof ResizeObserver === "function") {
+    const frameEl = canvas.ownerDocument.querySelector<HTMLElement>(".arena-viewport");
+    if (frameEl) {
+      frameObserver = new ResizeObserver(() => resize());
+      frameObserver.observe(frameEl);
+    }
+  }
+
   const demoParams = new URLSearchParams(window.location.search);
   const phaseParam = Number(demoParams.get("phase"));
   if (Number.isFinite(phaseParam) && phaseParam >= 2) world.jumpToPhase(phaseParam, demoParams.has("intro"));
@@ -455,6 +467,7 @@ export function createGameRenderer(
     dispose: () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", onResize);
+      frameObserver?.disconnect();
       if (demoTimer) window.clearInterval(demoTimer);
       if (demoClearTimer) window.clearTimeout(demoClearTimer);
       unsubscribe();
