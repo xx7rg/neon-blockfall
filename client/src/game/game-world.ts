@@ -152,6 +152,7 @@ export class GameWorld {
       sessionElapsedMs: this.sessionElapsedMs,
       combo: this.combo,
       backToBack: this.backToBack,
+      savedAt: Date.now(),
     };
   }
 

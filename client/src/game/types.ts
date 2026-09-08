@@ -81,4 +81,6 @@ export type SavedRun = {
   sessionElapsedMs: number;
   combo: number;
   backToBack: boolean;
+  /** Epoch ms de quando a partida foi salva; usado para expirar retomadas antigas. */
+  savedAt?: number;
 };

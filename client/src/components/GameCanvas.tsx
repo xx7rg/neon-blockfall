@@ -50,6 +50,9 @@ import { ARENA_SCENARIOS, getArenaScenario, type ArenaScenarioId } from "@/game/
 import { resolveTouchAction } from "@/game/touch-controls";
 
 const RUN_KEY = "neon-blockfall-run";
+// Retomada é para recuperar de uma interrupção real (fechou a aba, trocou de app),
+// não para transformar todo F5 na mesma partida. Passou disso, começa nova e aleatória.
+const RESUME_MAX_AGE_MS = 30 * 60 * 1000;
 
 function loadSavedRun(): SavedRun | null {
   try {
@@ -57,6 +60,16 @@ function loadSavedRun(): SavedRun | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedRun;
     if (!Array.isArray(parsed.board) || !parsed.active || !Array.isArray(parsed.queue) || parsed.queue.length === 0) {
+      return null;
+    }
+    if (typeof parsed.savedAt !== "number" || Date.now() - parsed.savedAt > RESUME_MAX_AGE_MS) {
+      clearSavedRun();
+      return null;
+    }
+    // Sem progresso real (F5 logo após iniciar) não vira retomada — começa nova e aleatória.
+    const hasProgress = parsed.score > 0 || parsed.lines > 0 || parsed.sessionElapsedMs > 15000;
+    if (!hasProgress) {
+      clearSavedRun();
       return null;
     }
     return parsed;
