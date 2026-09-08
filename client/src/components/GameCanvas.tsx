@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Share2,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 import { createGameRenderer, type GameHandle } from "@/game/renderer";
 import { getCells, NON_ROTATING, PIECE_COLORS } from "@/game/pieces";
@@ -101,10 +102,11 @@ type Action = "left" | "right" | "down" | "rotate" | "rotateBack" | "drop" | "ho
 type DasDir = "left" | "right" | "down";
 
 type GameCanvasProps = {
-  onGameOver?: (result: { score: number; lines: number; durationMs: number }) => void;
+  onGameOver?: (result: { score: number; lines: number; level: number; durationMs: number }) => void;
   onSnapshot?: (snapshot: GameSnapshot) => void;
   settingsOpen?: boolean;
   onPauseMenuRequest?: () => void;
+  onDockRequest?: () => void;
   onScenarioSelect?: (scenarioId: ArenaScenarioId) => void;
   controlBindings?: Record<string, ControlAction>;
   listeningForControl?: boolean;
@@ -235,6 +237,7 @@ export default function GameCanvas({
   onSnapshot,
   settingsOpen = false,
   onPauseMenuRequest,
+  onDockRequest,
   onScenarioSelect,
   controlBindings,
   listeningForControl = false,
@@ -377,6 +380,7 @@ export default function GameCanvas({
             onGameOverRef.current?.({
               score: nextSnapshot.score,
               lines: nextSnapshot.lines,
+              level: nextSnapshot.level,
               durationMs: Date.now() - runStartedAtRef.current,
             });
           } else if (!nextSnapshot.gameOver) {
@@ -736,6 +740,16 @@ export default function GameCanvas({
             </span>
           </div>
           <div className="topbar-actions">
+            {onDockRequest && (
+              <button
+                type="button"
+                className="topbar-icon-btn"
+                onClick={onDockRequest}
+                aria-label="Abrir placar, sequência e conquistas"
+              >
+                <Trophy size={16} />
+              </button>
+            )}
             <button
               type="button"
               className="topbar-icon-btn"
@@ -1054,12 +1068,23 @@ export default function GameCanvas({
               <small>
                 {dailyResult.improved
                   ? "NOVO RECORDE DO DIA"
-                  : `MELHOR HOJE · ${dailyResult.best.score.toLocaleString("pt-BR")} PTS`}
+                  : `MELHOR HOJE · ${dailyResult.best.score.toLocaleString("pt-BR")} PTS · FALTARAM ${(
+                      dailyResult.best.score - dailyResult.record.score
+                    ).toLocaleString("pt-BR")} PTS`}
               </small>
               <button type="button" className="action-button daily-share" onClick={handleShareDaily}>
                 <Share2 size={14} /> {dailyShared ? "COPIADO" : "COMPARTILHAR"}
               </button>
             </div>
+          )}
+          {snapshot.gameOver && !dailyMode && (
+            <p className={isNewRecord ? "near-miss is-record" : "near-miss"}>
+              {isNewRecord
+                ? "NOVO RECORDE PESSOAL!"
+                : highScore > snapshot.score
+                  ? `FALTARAM ${(highScore - snapshot.score).toLocaleString("pt-BR")} PTS PARA O SEU RECORDE`
+                  : null}
+            </p>
           )}
           <button
             type="button"

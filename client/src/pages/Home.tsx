@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   AlertTriangle,
+  Award,
+  Flame,
   Pause,
   RotateCcw,
   Settings2,
@@ -43,6 +46,9 @@ import {
   type LocalLeaderboardFilter,
 } from "@/game/local-leaderboard";
 import { onGameOverAd } from "@/mobile/native";
+import { refreshStreakReminder } from "@/mobile/notifications";
+import { loadStreak, recordPlaySession, type StreakRecord } from "@/game/streaks";
+import { ACHIEVEMENTS, loadUnlockedAchievements, recordGameForAchievements } from "@/game/achievements";
 
 function displayScore(score: string | number | null | undefined) {
   return String(score ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -131,6 +137,9 @@ export default function Home() {
     () => window.localStorage.getItem(LOCAL_LEADERBOARD_FILTER_KEY) ?? "all"
   );
   const [clearLocalOpen, setClearLocalOpen] = useState(false);
+  const [streak, setStreak] = useState<StreakRecord>(() => loadStreak());
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(() => loadUnlockedAchievements());
+  const [dockOpen, setDockOpen] = useState(false);
 
   useEffect(() => {
     if (!settingsOpen || !listeningAction) return;
@@ -257,8 +266,32 @@ export default function Home() {
     setLocalLeaderboard([]);
     setClearLocalOpen(false);
   };
-  const handleGameOver = (result: { score: number; lines: number; durationMs: number }) => {
-    setLocalLeaderboard(recordLocalScore({ ...result, scenarioId: arenaScenario }));
+  const handleGameOver = (result: { score: number; lines: number; level: number; durationMs: number }) => {
+    setLocalLeaderboard(
+      recordLocalScore({
+        score: result.score,
+        lines: result.lines,
+        durationMs: result.durationMs,
+        scenarioId: arenaScenario,
+      })
+    );
+
+    const { record: streakRecord, isFirstToday } = recordPlaySession();
+    setStreak(streakRecord);
+
+    const { newlyUnlocked } = recordGameForAchievements({ score: result.score, lines: result.lines }, streakRecord.currentStreak);
+    if (newlyUnlocked.length > 0) {
+      setUnlockedAchievements(loadUnlockedAchievements());
+      newlyUnlocked.forEach((achievement) => {
+        toast("CONQUISTA DESBLOQUEADA", { description: achievement.title });
+      });
+    }
+    if (isFirstToday && streakRecord.currentStreak > 1) {
+      toast(`SEQUÊNCIA DE ${streakRecord.currentStreak} DIAS`, {
+        description: "Continue jogando todo dia para manter o ritmo.",
+      });
+    }
+    void refreshStreakReminder(streakRecord.currentStreak);
     void onGameOverAd();
   };
 
@@ -271,14 +304,24 @@ export default function Home() {
         onSnapshot={setSessionSnapshot}
         settingsOpen={settingsOpen}
         onPauseMenuRequest={openSettings}
+        onDockRequest={() => setDockOpen(true)}
         controlBindings={bindings}
         listeningForControl={listeningAction !== null}
       />
 
-      <section className="world-dock" aria-label="Placar local e sistema de áudio">
+      {dockOpen && <div className="dock-backdrop" onClick={() => setDockOpen(false)} aria-hidden="true" />}
+      <section className={dockOpen ? "world-dock is-open" : "world-dock"} aria-label="Placar local e sistema de áudio">
+        <button type="button" className="dock-close" onClick={() => setDockOpen(false)} aria-label="Fechar painel">
+          <X size={14} />
+        </button>
         <div className="world-dock-header">
           <span>
             <Trophy size={13} /> NEON BLOCKFALL
+            {streak.currentStreak > 0 && (
+              <span className="streak-badge" aria-label={`Sequência de ${streak.currentStreak} dias`}>
+                <Flame size={11} /> {streak.currentStreak}
+              </span>
+            )}
           </span>
           <button type="button" className="world-toggle" onClick={openSettings} aria-label="Abrir configurações">
             <Settings2 size={14} />
@@ -430,6 +473,31 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="achievements-panel">
+          <div className="profile-title">
+            <span>
+              <Award size={13} /> CONQUISTAS
+            </span>
+            <small>
+              {unlockedAchievements.length}/{ACHIEVEMENTS.length}
+            </small>
+          </div>
+          <div className="achievement-grid">
+            {ACHIEVEMENTS.map((achievement) => {
+              const unlocked = unlockedAchievements.includes(achievement.id);
+              return (
+                <div key={achievement.id} className={unlocked ? "achievement-card unlocked" : "achievement-card"}>
+                  <b aria-hidden="true">{unlocked ? <Trophy size={12} /> : <Award size={12} />}</b>
+                  <span>
+                    <strong>{achievement.title}</strong>
+                    <small>{achievement.description}</small>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
