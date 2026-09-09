@@ -942,14 +942,18 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
 }
 
 /* ============================================================================
-   LAYOUT LARGO — tablet (retrato/paisagem), laptop, desktop, celular em modo
-   desktop. Arena no CENTRO preenchendo a altura da tela; HUD (pontos, reserva,
+   LAYOUT LARGO — laptop, desktop, tablet EM PAISAGEM, celular em modo desktop.
+   Arena no CENTRO preenchendo a altura da tela; HUD (pontos, reserva,
    próximas, fase) numa COLUNA LATERAL à direita; placar e conquistas só na
    gaveta (botão troféu), nunca empilhados abaixo. Tudo cabe numa tela — sem
-   rolagem de página. min-height:560px exclui celular em paisagem (layout
+   rolagem de página. min-height:540px exclui celular em paisagem (layout
    dedicado). Larguras em min(vw, vh) mantêm ~12:18 sem depender de aspect-ratio.
+   Exige orientation:landscape: em retrato (tablet incluso) a divisão lado a
+   lado espreme a arena e o control-deck vira um cluster minúsculo num canto
+   com metade da tela vazia — melhor cair no layout de coluna única (mobile-
+   first, acima) que já tem controles em tamanho real.
    ========================================================================== */
-@media (min-width: 640px) and (min-height: 540px) {
+@media (min-width: 640px) and (min-height: 540px) and (orientation: landscape) {
   html, body { overflow: hidden; overscroll-behavior: none; }
   .home-root, .game-shell { height: 100vh; height: 100dvh; overflow: hidden; }
 
@@ -1337,10 +1341,23 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
 }
 .topbar-lines { display: none; }
 
-@media (orientation: portrait) and (max-width: 639px) {
+/* orientation:portrait cobre celular E tablet em retrato (ex.: iPad ~810–1180
+   dependendo do split-view). Sem isso, tablet em retrato caía no layout largo
+   lado-a-lado (pensado pra paisagem) e os controles de toque viravam um
+   amontoado minúsculo num canto — ver git blame por contexto. */
+@media (orientation: portrait) and (max-width: 1024px) {
   html, body { height: 100%; overflow: hidden; }
   .home-root { height: 100vh; height: 100svh; overflow: hidden; }
   .game-shell { height: 100vh; height: 100svh; }
+
+  /* Acima de 640px, o bloco "uma largura só" (mais abaixo no arquivo) trava
+     .game-ui/.topbar/.control-deck/.arena-column em ~500px com !important —
+     pensado pra tablet/desktop em paisagem. Aqui precisamos da largura real
+     da tela, então cancelamos essas travas explicitamente. */
+  .game-ui { max-width: none !important; }
+  .topbar { max-width: none !important; width: 100% !important; margin: 0 !important; }
+  .control-deck { width: auto !important; max-width: none !important; margin-left: 0 !important; margin-right: 0 !important; }
+  .arena-column { width: auto !important; max-width: none !important; margin: 0 !important; }
 
   .game-ui {
     height: 100vh;
@@ -1410,14 +1427,14 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
   .arena-viewport {
     flex: 1 1 auto;
     min-height: 0;
-    width: 98vw !important;
-    max-width: 98vw !important;
+    width: min(92vw, 640px) !important;
+    max-width: min(92vw, 640px) !important;
     height: auto !important;
   }
   .arena-footer {
     flex: 0 0 auto;
-    width: 98vw !important;
-    max-width: 98vw !important;
+    width: min(92vw, 640px) !important;
+    max-width: min(92vw, 640px) !important;
     padding: 0;
     font-size: 10px;
   }
@@ -1433,8 +1450,8 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
   /* HUD: UMA linha — score + hold + próximas. Sem métricas (fase/linhas no topo). */
   .hud-rail {
     flex: 0 0 auto;
-    width: 98vw !important;
-    max-width: 98vw !important;
+    width: min(92vw, 640px) !important;
+    max-width: min(92vw, 640px) !important;
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
