@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { createGameRenderer, type GameHandle } from "@/game/renderer";
 import { adsEnabled, showRewardedForContinue } from "@/mobile/native";
+import { useI18n, useT } from "@/i18n/context";
 import { getCells, NON_ROTATING, PIECE_COLORS } from "@/game/pieces";
 import { LINES_PER_PHASE, type GameSnapshot, type PieceKind, type SavedRun } from "@/game/types";
 import { PHASE_MODIFIERS, type ModifierId } from "@/game/modifiers";
@@ -148,15 +149,19 @@ function formatScore(value: number) {
 }
 
 function formatBindingKey(key: string) {
-  const labels: Record<string, string> = { " ": "ESPAÇO", arrowleft: "←", arrowright: "→", arrowup: "↑", arrowdown: "↓" };
+  const labels: Record<string, string> = { " ": "SPACE", arrowleft: "←", arrowright: "→", arrowup: "↑", arrowdown: "↓" };
   return labels[key] ?? key.toUpperCase();
 }
 
 function Preview({ kind, size = "md" }: { kind: PieceKind | null; size?: "sm" | "md" }) {
+  const t = useT();
   const cells = kind ? getCells(kind, 0) : [];
   const color = kind ? PIECE_COLORS[kind] : null;
   return (
-    <div className={size === "sm" ? "preview-grid is-sm" : "preview-grid"} aria-label={kind ? `Peça ${kind}` : "Espaço vazio"}>
+    <div
+      className={size === "sm" ? "preview-grid is-sm" : "preview-grid"}
+      aria-label={kind ? `${t("hud.next")} ${kind}` : t("hud.emptyAria")}
+    >
       {Array.from({ length: 16 }, (_, index) => {
         const x = index % 4;
         const y = Math.floor(index / 4);
@@ -273,6 +278,8 @@ export default function GameCanvas({
   listeningForControl = false,
   scenarioId = "megacity",
 }: GameCanvasProps) {
+  const { t, locale } = useI18n();
+  const nf = (n: number) => n.toLocaleString(locale);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const touchLayerRef = useRef<HTMLDivElement>(null);
   const onGameOverRef = useRef(onGameOver);
@@ -510,7 +517,7 @@ export default function GameCanvas({
           if (event.type === "garbage") {
             playGarbage();
             vibrate("medium");
-            setGestureFeedback({ label: "SOBRECARGA", id: Date.now() });
+            setGestureFeedback({ label: "feedback.overload", id: Date.now() });
             if (gestureTimerRef.current) window.clearTimeout(gestureTimerRef.current);
             gestureTimerRef.current = window.setTimeout(() => setGestureFeedback(null), 700);
             return;
@@ -518,7 +525,7 @@ export default function GameCanvas({
           if (event.type === "checkpoint") {
             playCheckpoint(event.ok);
             vibrate(event.ok ? "phase" : "medium");
-            setGestureFeedback({ label: event.ok ? "CHECKPOINT OK · +BÔNUS" : "CHECKPOINT FALHOU", id: Date.now() });
+            setGestureFeedback({ label: event.ok ? "feedback.checkpointOk" : "feedback.checkpointFail", id: Date.now() });
             if (gestureTimerRef.current) window.clearTimeout(gestureTimerRef.current);
             gestureTimerRef.current = window.setTimeout(() => setGestureFeedback(null), 1100);
             return;
@@ -592,12 +599,14 @@ export default function GameCanvas({
       // Sons de movimento/rotação/encaixe são disparados por runAction e pelos eventos.
       const label =
         action === "rotate"
-          ? "ROTAÇÃO"
+          ? "feedback.rotate"
           : action === "drop"
-            ? "ENCAIXE INSTANTÂNEO"
+            ? "feedback.hardDrop"
             : action === "hold"
-              ? "PEÇA RESERVADA"
-              : `MOVIMENTO ${action === "left" ? "←" : "→"}`;
+              ? "feedback.hold"
+              : action === "left"
+                ? "feedback.moveLeft"
+                : "feedback.moveRight";
       setGestureFeedback({ label, id: Date.now() });
       if (gestureTimerRef.current) window.clearTimeout(gestureTimerRef.current);
       gestureTimerRef.current = window.setTimeout(() => setGestureFeedback(null), 520);
@@ -819,7 +828,7 @@ export default function GameCanvas({
       return;
     }
     setResetArmed(true);
-    setGestureFeedback({ label: "TOQUE DE NOVO PARA REINICIAR", id: Date.now() });
+    setGestureFeedback({ label: "feedback.restartArmed", id: Date.now() });
     if (gestureTimerRef.current) window.clearTimeout(gestureTimerRef.current);
     gestureTimerRef.current = window.setTimeout(() => setGestureFeedback(null), 2500);
     resetTimerRef.current = window.setTimeout(() => setResetArmed(false), 2500);
@@ -868,7 +877,7 @@ export default function GameCanvas({
               <img src="/icon.svg" alt="" className="brand-mark" width={28} height={28} />
             </div>
             <div>
-              <p className="eyebrow">SISTEMA ARCADE / 07</p>
+              <p className="eyebrow">{t("topbar.eyebrow")}</p>
               <h1>
                 NEON <span>BLOCKFALL</span>
               </h1>
@@ -879,15 +888,15 @@ export default function GameCanvas({
               type="button"
               className="topbar-pause"
               onClick={snapshot.paused ? () => onAction("pause") : pauseIntoSettings}
-              aria-label={snapshot.paused ? "Retomar partida" : "Pausar partida e abrir configurações"}
+              aria-label={snapshot.paused ? t("topbar.resumeAria") : t("topbar.pauseAria")}
             >
               {snapshot.paused ? <Play size={12} /> : <Pause size={12} />}
-              {snapshot.paused ? "RETOMAR" : "PAUSAR"}
+              {snapshot.paused ? t("topbar.resume") : t("topbar.pause")}
             </button>
             {snapshot.combo > 0 && <span className="combo-chip">COMBO ×{snapshot.combo}</span>}
             {snapshot.modifier !== "none" && (
               <span className="modifier-chip" style={{ "--mod-accent": PHASE_MODIFIERS[snapshot.modifier].accent } as React.CSSProperties}>
-                {PHASE_MODIFIERS[snapshot.modifier].label}
+                {t(`modifier.${snapshot.modifier}.label`)}
               </span>
             )}
             {runMode === "sprint" ? (
@@ -900,9 +909,10 @@ export default function GameCanvas({
               </span>
             ) : (
               <>
-                <span className="status-dot" /> FASE <strong>{snapshot.level.toString().padStart(2, "0")}</strong>
+                <span className="status-dot" /> {t("common.phase")}{" "}
+                <strong>{snapshot.level.toString().padStart(2, "0")}</strong>
                 <span className="topbar-lines">
-                  LINHAS <strong>{snapshot.lines.toString().padStart(3, "0")}</strong>
+                  {t("common.lines")} <strong>{snapshot.lines.toString().padStart(3, "0")}</strong>
                 </span>
               </>
             )}
@@ -913,7 +923,7 @@ export default function GameCanvas({
                 type="button"
                 className="topbar-icon-btn"
                 onClick={onDockRequest}
-                aria-label="Abrir placar, sequência e conquistas"
+                aria-label={t("topbar.openDock")}
               >
                 <Trophy size={16} />
               </button>
@@ -922,7 +932,7 @@ export default function GameCanvas({
               type="button"
               className="topbar-icon-btn"
               onClick={snapshot.paused ? () => onAction("pause") : pauseIntoSettings}
-              aria-label={snapshot.paused ? "Retomar" : "Pausar"}
+              aria-label={snapshot.paused ? t("topbar.resume") : t("topbar.pause")}
             >
               {snapshot.paused ? <Play size={16} /> : <Pause size={16} />}
             </button>
@@ -930,7 +940,7 @@ export default function GameCanvas({
               type="button"
               className={resetArmed ? "topbar-icon-btn is-armed" : "topbar-icon-btn"}
               onClick={handleResetTap}
-              aria-label={resetArmed ? "Toque de novo para reiniciar" : "Reiniciar partida"}
+              aria-label={resetArmed ? t("topbar.restartArmed") : t("topbar.restart")}
             >
               <RotateCcw size={16} />
             </button>
@@ -938,25 +948,27 @@ export default function GameCanvas({
         </header>
 
         <main className="game-stage">
-          <section className="arena-column" aria-label="Arena de jogo">
+          <section className="arena-column" aria-label={t("hud.arenaAria")}>
             <div className="arena-caption">
               <span>
                 {snapshot.modifier === "none"
-                  ? "GRADE / 12 × 18"
-                  : `MOD · ${PHASE_MODIFIERS[snapshot.modifier].label}`}
+                  ? t("hud.grid")
+                  : t("phase.mod", { name: t(`modifier.${snapshot.modifier}.label`) })}
               </span>
               <span className="caption-line" />
               <span>
-                FASE {snapshot.level.toString().padStart(2, "0")} · {Math.round(1000 / snapshot.dropInterval)} QUEDAS/s
+                {t("common.phase")} {snapshot.level.toString().padStart(2, "0")} ·{" "}
+                {Math.round(1000 / snapshot.dropInterval)}/s
               </span>
             </div>
             <div className="arena-viewport">
               <div ref={touchLayerRef} className="touch-layer" aria-hidden="true" />
               {snapshot.checkpoint && (
                 <div className={snapshot.checkpoint.secondsLeft <= 5 ? "checkpoint-strip is-urgent" : "checkpoint-strip"}>
-                  <span>CHECKPOINT</span>
+                  <span>{t("checkpoint.title")}</span>
                   <strong>
-                    {snapshot.checkpoint.linesLeft} {snapshot.checkpoint.linesLeft === 1 ? "LINHA" : "LINHAS"}
+                    {snapshot.checkpoint.linesLeft}{" "}
+                    {snapshot.checkpoint.linesLeft === 1 ? t("checkpoint.linesOne") : t("checkpoint.linesOther")}
                   </strong>
                   <b>{snapshot.checkpoint.secondsLeft}s</b>
                 </div>
@@ -966,20 +978,20 @@ export default function GameCanvas({
                   <span className="burst-ring ring-one" />
                   <span className="burst-ring ring-two" />
                   <strong>
-                    {burst.count} {burst.count === 1 ? "LINHA" : "LINHAS"}
+                    {burst.count} {burst.count === 1 ? t("common.line") : t("common.lines")}
                   </strong>
                   <small>
                     {burst.perfect
-                      ? "PERFEITO · CIRCUITO ZERADO"
+                      ? t("burst.perfect")
                       : burst.combo > 0
                         ? `COMBO ×${burst.combo}`
-                        : "CIRCUITO LIMPO"}
+                        : t("burst.clear")}
                   </small>
                 </div>
               )}
               {gestureFeedback && (
                 <div className="gesture-feedback" key={gestureFeedback.id} role="status" aria-live="polite">
-                  <Sparkles size={14} /> {gestureFeedback.label}
+                  <Sparkles size={14} /> {t(gestureFeedback.label)}
                 </div>
               )}
             </div>
@@ -992,44 +1004,44 @@ export default function GameCanvas({
                 <i className="legend-dot dot-magenta" />
                 LINHA LIMPA
               </span>
-              <span className="footer-hint">ESPAÇO / ENCAIXE</span>
-              <span className="touch-hint">TOQUE GIRA · DESLIZE ←→ MOVE · ↓ ENCAIXA · ↑ RESERVA</span>
+              <span className="footer-hint">{t("hud.drop")}</span>
+              <span className="touch-hint">{t("controls.tagline")}</span>
             </div>
           </section>
 
-          <aside className="hud-rail" aria-label="Status da partida">
+          <aside className="hud-rail" aria-label={t("hud.statusAria")}>
             <section className="hud-card score-card">
               <div className="card-label">
-                <span>01 / PONTOS</span>
-                <span>PTS</span>
+                <span>{t("hud.points")}</span>
+                <span>{t("common.pts")}</span>
               </div>
               <div className="score-value">{formatScore(snapshot.score)}</div>
               <div className="score-rule" />
               <div className="record-row">
-                <span>RECORDE</span>
+                <span>{t("common.record")}</span>
                 <strong>{formatScore(highScore)}</strong>
               </div>
-              {isNewRecord && <div className="record-badge">NOVO RECORDE</div>}
+              {isNewRecord && <div className="record-badge">{t("hud.newRecord")}</div>}
             </section>
 
             <section className="hud-card queue-card">
               <div className="card-label">
-                <span>02 / FILA</span>
-                <span>RESERVA · PRÓXIMAS</span>
+                <span>{t("hud.queue")}</span>
+                <span>{t("hud.holdNext")}</span>
               </div>
               <div className="queue-grid">
                 <button
                   type="button"
                   className={snapshot.holdLocked ? "queue-hold is-locked" : "queue-hold"}
                   onClick={() => onAction("hold")}
-                  aria-label="Guardar a peça atual na reserva"
+                  aria-label={t("hud.holdAria")}
                 >
-                  <small>RESERVA</small>
+                  <small>{t("hud.hold")}</small>
                   <Preview kind={snapshot.hold} size="sm" />
-                  {!snapshot.hold && <span className="queue-hold-hint">toque para guardar</span>}
+                  {!snapshot.hold && <span className="queue-hold-hint">{t("hud.holdHint")}</span>}
                 </button>
                 <div className="queue-next-wrap">
-                  <small className="queue-slot-label">PRÓXIMAS</small>
+                  <small className="queue-slot-label">{t("hud.next")}</small>
                   <div className="queue-next">
                     {snapshot.nextQueue.map((kind, index) => (
                       <Preview key={`${kind}-${index}`} kind={kind} size="sm" />
@@ -1041,39 +1053,48 @@ export default function GameCanvas({
 
             <section className="hud-card metrics-card">
               <div className="metric-row">
-                <span>FASE</span>
+                <span>{t("common.phase")}</span>
                 <strong>{snapshot.level.toString().padStart(2, "0")}</strong>
               </div>
               <div className="metric-row">
-                <span>LINHAS</span>
+                <span>{t("common.lines")}</span>
                 <strong>{snapshot.lines.toString().padStart(3, "0")}</strong>
               </div>
-              <div className="phase-progress" aria-label={`${snapshot.linesToNextPhase} linhas para a próxima fase`}>
+              <div
+                className="phase-progress"
+                aria-label={t("hud.nextPhase", {
+                  n: snapshot.linesToNextPhase,
+                  unit: snapshot.linesToNextPhase === 1 ? t("common.line") : t("common.lines"),
+                })}
+              >
                 <span style={{ width: `${Math.max(4, phaseFill)}%` }} />
               </div>
               <small className="phase-progress-label">
-                PRÓXIMA FASE EM <b>{snapshot.linesToNextPhase}</b> {snapshot.linesToNextPhase === 1 ? "LINHA" : "LINHAS"}
+                {t("hud.nextPhase", {
+                  n: snapshot.linesToNextPhase,
+                  unit: snapshot.linesToNextPhase === 1 ? t("common.line") : t("common.lines"),
+                })}
               </small>
             </section>
 
             <section className="hud-card command-card">
               <div className="card-label">
-                <span>03 / COMANDOS</span>
-                <span>TECLAS</span>
+                <span>{t("hud.commands")}</span>
+                <span>{t("hud.keys")}</span>
               </div>
               <div className="key-guide">
                 <span>
                   <b>{formatBindingKey(getPrimaryControlKey("left", visibleBindings))}</b>
-                  <b>{formatBindingKey(getPrimaryControlKey("right", visibleBindings))}</b> MOVER
+                  <b>{formatBindingKey(getPrimaryControlKey("right", visibleBindings))}</b> {t("hud.move")}
                 </span>
                 <span>
-                  <b>{formatBindingKey(getPrimaryControlKey("rotate", visibleBindings))}</b> GIRAR
+                  <b>{formatBindingKey(getPrimaryControlKey("rotate", visibleBindings))}</b> {t("hud.rotate")}
                 </span>
                 <span>
-                  <b>{formatBindingKey(getPrimaryControlKey("drop", visibleBindings))}</b> ENCAIXE
+                  <b>{formatBindingKey(getPrimaryControlKey("drop", visibleBindings))}</b> {t("hud.drop")}
                 </span>
                 <span>
-                  <b>{formatBindingKey(getPrimaryControlKey("hold", visibleBindings))}</b> RESERVA
+                  <b>{formatBindingKey(getPrimaryControlKey("hold", visibleBindings))}</b> {t("hud.hold")}
                 </span>
               </div>
             </section>
@@ -1085,12 +1106,12 @@ export default function GameCanvas({
                 onClick={snapshot.paused ? () => onAction("pause") : pauseIntoSettings}
               >
                 {snapshot.paused ? <Play size={16} /> : <Pause size={16} />}
-                {snapshot.paused ? "RETOMAR" : "PAUSAR"}
+                {snapshot.paused ? t("topbar.resume") : t("topbar.pause")}
               </button>
               <button
                 type="button"
                 className={resetArmed ? "icon-action is-armed" : "icon-action"}
-                aria-label={resetArmed ? "Toque de novo para reiniciar" : "Reiniciar partida"}
+                aria-label={resetArmed ? t("topbar.restartArmed") : t("topbar.restart")}
                 onClick={handleResetTap}
               >
                 <RotateCcw size={18} />
@@ -1101,30 +1122,30 @@ export default function GameCanvas({
 
         <footer className="control-deck">
           <div className="control-group">
-            <span className="deck-label">CONTROLE TÁTIL</span>
+            <span className="deck-label">{t("controls.tactile")}</span>
             <div className="control-row">
-              <ControlButton label="Mover para esquerda" caption="ESQ." action="left" onAction={onAction}>
+              <ControlButton label={t("controls.leftAria")} caption={t("controls.left")} action="left" onAction={onAction}>
                 <ArrowLeft size={18} />
               </ControlButton>
-              <ControlButton label="Acelerar queda" caption="DESCER" action="down" onAction={onAction}>
+              <ControlButton label={t("controls.downAria")} caption={t("controls.down")} action="down" onAction={onAction}>
                 <ArrowDown size={18} />
               </ControlButton>
-              <ControlButton label="Mover para direita" caption="DIR." action="right" onAction={onAction}>
+              <ControlButton label={t("controls.rightAria")} caption={t("controls.right")} action="right" onAction={onAction}>
                 <ArrowRight size={18} />
               </ControlButton>
-              <ControlButton label="Girar peça" caption="GIRAR" action="rotate" onAction={onAction}>
+              <ControlButton label={t("controls.rotateAria")} caption={t("controls.rotateBtn")} action="rotate" onAction={onAction}>
                 <ArrowUp size={18} />
               </ControlButton>
-              <ControlButton label="Guardar peça na reserva" caption="RESERVA" action="hold" onAction={onAction}>
+              <ControlButton label={t("controls.holdAria")} caption={t("controls.holdBtn")} action="hold" onAction={onAction}>
                 <Layers size={18} />
               </ControlButton>
-              <ControlButton label="Encaixe instantâneo" caption="ENCAIXE" action="drop" onAction={onAction}>
+              <ControlButton label={t("controls.dropAria")} caption={t("controls.dropBtn")} action="drop" onAction={onAction}>
                 <ChevronsDown size={18} />
               </ControlButton>
             </div>
           </div>
           <div className="deck-message">
-            <Sparkles size={15} /> COMPLETE A LINHA. ACENDA O CIRCUITO.
+            <Sparkles size={15} /> {t("controls.tagline")}
           </div>
           <div className="version-label">
             x7rG ENTERPRISE™ · NB v{__APP_VERSION__}
@@ -1138,26 +1159,26 @@ export default function GameCanvas({
           type="button"
           className={`phase-transition mod-${phaseTransition.modifier}`}
           onClick={endPhaseTransition}
-          aria-label="Continuar"
+          aria-label={t("common.continue")}
         >
           <span className="phase-transition-kicker">
-            {phaseTransition.modifier === "none" ? "CIRCUITO ESTÁVEL" : `MOD · ${PHASE_MODIFIERS[phaseTransition.modifier].label}`}
+            {phaseTransition.modifier === "none"
+              ? t("phase.stable")
+              : t("phase.mod", { name: t(`modifier.${phaseTransition.modifier}.label`) })}
           </span>
-          <strong>FASE {phaseTransition.level.toString().padStart(2, "0")}</strong>
-          <small>{PHASE_MODIFIERS[phaseTransition.modifier].rule}</small>
-          <em>TOQUE PARA CONTINUAR</em>
+          <strong>{t("phase.label", { n: phaseTransition.level.toString().padStart(2, "0") })}</strong>
+          <small>{t(`modifier.${phaseTransition.modifier}.rule`)}</small>
+          <em>{t("phase.tapContinue")}</em>
         </button>
       )}
 
       {(preStartOpen || launching) && !settingsOpen && (
         <div className={launching ? "prestart-overlay is-launching" : "prestart-overlay"}>
-          <span className="state-kicker">{launching ? "CONEXÃO / SINCRONIZANDO" : "AMBIENTE / PRONTO"}</span>
-          <strong>{launching ? "INICIANDO PARTIDA" : "ESCOLHA SEU CENÁRIO"}</strong>
-          <small>
-            {launching
-              ? "Sincronizando ambiente, ritmo e HUD."
-              : "Defina o ambiente da run. A física permanece a mesma."}
-          </small>
+          <span className="state-kicker">
+            {launching ? t("prestart.kickerLoading") : t("prestart.kickerReady")}
+          </span>
+          <strong>{launching ? t("prestart.titleLoading") : t("prestart.titleReady")}</strong>
+          <small>{launching ? t("prestart.subLoading") : t("prestart.subReady")}</small>
           {!launching &&
             (() => {
               const activeKey = dailyMode ? "daily" : runMode;
@@ -1179,38 +1200,38 @@ export default function GameCanvas({
                 {
                   key: "endless",
                   icon: <InfinityIcon size={14} />,
-                  title: "PARTIDA LIVRE",
-                  sub: "Sequência aleatória, sem fim.",
+                  title: t("mode.endless.title"),
+                  sub: t("mode.endless.sub"),
                 },
                 {
                   key: "daily",
                   icon: <CalendarClock size={14} />,
-                  title: "DESAFIO DO DIA",
-                  sub: `${todayKey()} · igual para todos${
-                    dailyBest ? ` · rec. ${dailyBest.score.toLocaleString("pt-BR")}` : ""
-                  }`,
+                  title: t("mode.daily.title"),
+                  sub: dailyBest
+                    ? t("mode.daily.subRecord", { date: todayKey(), score: nf(dailyBest.score) })
+                    : t("mode.daily.sub", { date: todayKey() }),
                 },
                 {
                   key: "sprint",
                   icon: <Flag size={14} />,
-                  title: `SPRINT ${SPRINT_LINES}`,
-                  sub: `Corra até ${SPRINT_LINES} linhas${
-                    modeRecords.sprintBestMs != null ? ` · rec. ${formatClock(modeRecords.sprintBestMs)}` : ""
-                  }`,
+                  title: t("mode.sprint.title", { lines: SPRINT_LINES }),
+                  sub:
+                    modeRecords.sprintBestMs != null
+                      ? t("mode.sprint.subRecord", { lines: SPRINT_LINES, time: formatClock(modeRecords.sprintBestMs) })
+                      : t("mode.sprint.sub", { lines: SPRINT_LINES }),
                 },
                 {
                   key: "ultra",
                   icon: <Timer size={14} />,
-                  title: "ULTRA 2:00",
-                  sub: `Máximo de pontos em 2 min${
+                  title: t("mode.ultra.title"),
+                  sub:
                     modeRecords.ultraBestScore != null
-                      ? ` · rec. ${modeRecords.ultraBestScore.toLocaleString("pt-BR")}`
-                      : ""
-                  }`,
+                      ? t("mode.ultra.subRecord", { score: nf(modeRecords.ultraBestScore) })
+                      : t("mode.ultra.sub"),
                 },
               ];
               return (
-                <div className="prestart-modes" role="radiogroup" aria-label="Modo de jogo">
+                <div className="prestart-modes" role="radiogroup" aria-label={t("prestart.modeAria")}>
                   {items.map((item) => (
                     <button
                       key={item.key}
@@ -1239,8 +1260,8 @@ export default function GameCanvas({
                   onClick={() => onScenarioSelect?.(scenario.id)}
                   style={{ "--scenario-accent": scenario.accent, background: scenario.background } as React.CSSProperties}
                 >
-                  <span>{scenario.label}</span>
-                  {scenarioId === scenario.id && <b>ATIVO</b>}
+                  <span>{t(`scenario.${scenario.id}.label`)}</span>
+                  {scenarioId === scenario.id && <b>{t("common.active")}</b>}
                 </button>
               ))}
             </div>
@@ -1251,17 +1272,17 @@ export default function GameCanvas({
             onClick={startRun}
             disabled={launching}
           >
-            <Play size={16} /> <span>{launching ? "SINCRONIZANDO..." : "INICIAR PARTIDA"}</span>
+            <Play size={16} /> <span>{launching ? t("prestart.starting") : t("prestart.start")}</span>
           </button>
-          <span className="prestart-credit">x7rG ENTERPRISE™</span>
+          <span className="prestart-credit">{t("prestart.credit")}</span>
         </div>
       )}
 
       {reviveOpen && !settingsOpen && (
         <div className="state-overlay revive-overlay">
-          <span className="state-kicker">SINAL PERDIDO</span>
-          <strong>CONTINUAR?</strong>
-          <p className="revive-score">{formatScore(snapshot.score)} PTS</p>
+          <span className="state-kicker">{t("revive.kicker")}</span>
+          <strong>{t("revive.title")}</strong>
+          <p className="revive-score">{formatScore(snapshot.score)} {t("common.pts")}</p>
           <div
             className="revive-ring"
             aria-hidden="true"
@@ -1276,11 +1297,7 @@ export default function GameCanvas({
             disabled={reviveBusy}
           >
             <Play size={16} />{" "}
-            {reviveBusy
-              ? "CARREGANDO ANÚNCIO…"
-              : adsEnabled()
-                ? "ASSISTIR E CONTINUAR"
-                : "CONTINUAR (TESTE)"}
+            {reviveBusy ? t("revive.loading") : adsEnabled() ? t("revive.watch") : t("revive.free")}
           </button>
           <button
             type="button"
@@ -1288,7 +1305,7 @@ export default function GameCanvas({
             onClick={declineRevive}
             disabled={reviveBusy}
           >
-            ENCERRAR
+            {t("revive.decline")}
           </button>
         </div>
       )}
@@ -1299,72 +1316,81 @@ export default function GameCanvas({
             {snapshot.gameOver
               ? runMode === "sprint"
                 ? modeOutcome?.completed
-                  ? `SPRINT ${SPRINT_LINES} · COMPLETO`
-                  : "SPRINT · INTERROMPIDO"
+                  ? t("state.kicker.sprintDone", { lines: SPRINT_LINES })
+                  : t("state.kicker.sprintStopped")
                 : runMode === "ultra"
-                  ? "ULTRA · TEMPO ESGOTADO"
+                  ? t("state.kicker.ultraTimeUp")
                   : dailyMode
-                    ? "DESAFIO DO DIA · ENCERRADO"
-                    : "SINAL ENCERRADO"
+                    ? t("state.kicker.dailyEnded")
+                    : t("state.kicker.signalEnded")
               : justResumed
-                ? "PARTIDA RETOMADA"
-                : "SISTEMA EM PAUSA"}
+                ? t("state.kicker.resumed")
+                : t("state.kicker.paused")}
           </span>
           <strong>
             {snapshot.gameOver
               ? runMode === "sprint" && modeOutcome?.completed
-                ? "SPRINT!"
+                ? t("state.title.sprintDone")
                 : runMode === "ultra"
-                  ? "TEMPO!"
-                  : "FIM DE JOGO"
+                  ? t("state.title.ultra")
+                  : t("state.title.gameOver")
               : justResumed
-                ? "CONTINUAR?"
-                : "EM PAUSA"}
+                ? t("state.title.resume")
+                : t("state.title.paused")}
           </strong>
           {snapshot.gameOver && runMode === "sprint" && modeOutcome && (
             <div className="daily-result mode-result">
-              <p>{modeOutcome.completed ? `${SPRINT_LINES} LINHAS` : `${snapshot.lines}/${SPRINT_LINES} LINHAS`}</p>
+              <p>
+                {modeOutcome.completed
+                  ? t("state.sprintResultLines", { n: SPRINT_LINES })
+                  : t("state.sprintResultPartial", { done: snapshot.lines, total: SPRINT_LINES })}
+              </p>
               <strong>{formatClock(modeOutcome.elapsedMs)}</strong>
               <small>
                 {modeRecords.sprintBestMs != null
-                  ? `MELHOR TEMPO · ${formatClock(modeRecords.sprintBestMs)}`
-                  : "SEM RECORDE AINDA"}
+                  ? t("state.sprintBestTime", { time: formatClock(modeRecords.sprintBestMs) })
+                  : t("state.noRecordYet")}
               </small>
             </div>
           )}
           {snapshot.gameOver && runMode === "ultra" && (
             <div className="daily-result mode-result">
               <p>2:00</p>
-              <strong>{snapshot.score.toLocaleString("pt-BR")} PTS</strong>
+              <strong>
+                {nf(snapshot.score)} {t("common.pts")}
+              </strong>
               <small>
                 {modeRecords.ultraBestScore != null
-                  ? `MELHOR · ${modeRecords.ultraBestScore.toLocaleString("pt-BR")} PTS`
-                  : "SEM RECORDE AINDA"}
+                  ? t("state.ultraBest", { score: nf(modeRecords.ultraBestScore) })
+                  : t("state.noRecordYet")}
               </small>
             </div>
           )}
           {snapshot.gameOver && dailyMode && dailyResult && (
             <div className="daily-result">
               <p>{todayKey()}</p>
-              <strong>{dailyResult.record.score.toLocaleString("pt-BR")} PTS</strong>
+              <strong>
+                {nf(dailyResult.record.score)} {t("common.pts")}
+              </strong>
               <small>
                 {dailyResult.improved
-                  ? "NOVO RECORDE DO DIA"
-                  : `MELHOR HOJE · ${dailyResult.best.score.toLocaleString("pt-BR")} PTS · FALTARAM ${(
-                      dailyResult.best.score - dailyResult.record.score
-                    ).toLocaleString("pt-BR")} PTS`}
+                  ? t("daily.newRecord")
+                  : t("daily.bestToday", {
+                      best: nf(dailyResult.best.score),
+                      gap: nf(dailyResult.best.score - dailyResult.record.score),
+                    })}
               </small>
               <button type="button" className="action-button daily-share" onClick={handleShareDaily}>
-                <Share2 size={14} /> {dailyShared ? "COPIADO" : "COMPARTILHAR"}
+                <Share2 size={14} /> {dailyShared ? t("daily.shared") : t("daily.share")}
               </button>
             </div>
           )}
           {snapshot.gameOver && !dailyMode && runMode !== "sprint" && (
             <p className={isNewRecord ? "near-miss is-record" : "near-miss"}>
               {isNewRecord
-                ? "NOVO RECORDE PESSOAL!"
+                ? t("state.newPersonalRecord")
                 : highScore > snapshot.score
-                  ? `FALTARAM ${(highScore - snapshot.score).toLocaleString("pt-BR")} PTS PARA O SEU RECORDE`
+                  ? t("state.missedRecord", { n: nf(highScore - snapshot.score) })
                   : null}
             </p>
           )}
@@ -1378,17 +1404,17 @@ export default function GameCanvas({
           >
             {snapshot.gameOver ? (
               <>
-                <RotateCcw size={16} /> {dailyMode ? "REPETIR DESAFIO" : "REINICIAR RUN"}
+                <RotateCcw size={16} /> {dailyMode ? t("state.restartDaily") : t("state.restartRun")}
               </>
             ) : (
               <>
-                <Play size={16} /> {justResumed ? "CONTINUAR" : "RETOMAR"}
+                <Play size={16} /> {justResumed ? t("common.continue") : t("common.resume")}
               </>
             )}
           </button>
           {snapshot.gameOver && dailyMode && (
             <button type="button" className="state-ghost-button" onClick={exitDaily}>
-              VOLTAR À PARTIDA LIVRE
+              {t("state.exitDaily")}
             </button>
           )}
         </div>

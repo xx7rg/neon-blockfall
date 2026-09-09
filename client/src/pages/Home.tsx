@@ -14,6 +14,8 @@ import {
   X,
 } from "lucide-react";
 import GameCanvas from "@/components/GameCanvas";
+import { useI18n, useT } from "@/i18n/context";
+import { detectLocale, SUPPORTED_LOCALES, type LocalePreference } from "@/i18n";
 import {
   getAudioSettings,
   playPauseClose,
@@ -67,40 +69,42 @@ function controlLabel(action: ControlAction) {
 type SessionSummarySnapshot = Pick<GameSnapshot, "score" | "lines" | "level" | "sessionElapsedMs" | "paused">;
 
 function SessionSummary({ snapshot }: { snapshot: SessionSummarySnapshot }) {
+  const t = useT();
   const phaseProgress = getPhaseProgress(snapshot.lines);
   return (
     <section className="pause-summary" aria-labelledby="pause-summary-title">
       <div className="pause-summary-heading">
         <span id="pause-summary-title">
-          <Pause size={12} /> RESUMO DA SESSÃO
+          <Pause size={12} /> {t("pause.summary")}
         </span>
-        <b>{snapshot.paused ? "PAUSADO" : "EM ANDAMENTO"}</b>
+        <b>{snapshot.paused ? t("pause.status.paused") : t("pause.status.running")}</b>
       </div>
       <div className="pause-summary-grid">
         <div className="pause-stat">
-          <small>PONTUAÇÃO ATUAL</small>
+          <small>{t("pause.currentScore")}</small>
           <strong>{displayScore(snapshot.score)}</strong>
-          <span>PTS · LINHAS VÁLIDAS</span>
+          <span>{t("pause.scoreCaption")}</span>
         </div>
         <div className="pause-stat">
-          <small>TEMPO DECORRIDO</small>
+          <small>{t("pause.elapsed")}</small>
           <strong>{formatSessionElapsed(snapshot.sessionElapsedMs)}</strong>
           <span>
-            {snapshot.lines} LINHAS · FASE {String(snapshot.level).padStart(2, "0")}
+            {snapshot.lines} {t("common.lines")} · {t("common.phase")} {String(snapshot.level).padStart(2, "0")}
           </span>
         </div>
       </div>
-      <div className="pause-progress" aria-label={`${phaseProgress}% para a próxima fase`}>
+      <div className="pause-progress" aria-label={t("pause.phaseProgressAria", { n: phaseProgress })}>
         <span style={{ width: `${phaseProgress || 3}%` }} />
       </div>
       <small className="pause-progress-label">
-        PROGRESSO DA FASE <b>{phaseProgress}%</b>
+        {t("pause.phaseProgress")} <b>{phaseProgress}%</b>
       </small>
     </section>
   );
 }
 
 export default function Home() {
+  const { t, preference: localePreference, setPreference: setLocalePreference } = useI18n();
   const [audioVolume, setAudioVolumeState] = useState(() => getAudioSettings().volume);
   const [audioMuted, setAudioMutedState] = useState(() => getAudioSettings().muted);
   const [musicVolume, setMusicVolumeState] = useState(() => getMusicSettings().volume);
@@ -147,7 +151,7 @@ export default function Home() {
       if (event.key === "Escape") {
         event.preventDefault();
         setListeningAction(null);
-        setSettingsMessage("REMAPEAMENTO CANCELADO");
+        setSettingsMessage("settings.remapCancelled");
         return;
       }
       if (event.key === "Tab") return;
@@ -163,9 +167,7 @@ export default function Home() {
       setBindings(next);
       window.dispatchEvent(new CustomEvent("neon-blockfall-controls-changed"));
       setListeningAction(null);
-      setSettingsMessage(
-        `${CONTROL_ACTIONS.find((item) => item.action === listeningAction)?.label ?? "CONTROLE"} · ${formatControlKey(event.key)}`
-      );
+      setSettingsMessage(`${t(`control.${listeningAction}.label`)} · ${formatControlKey(event.key)}`);
     };
     window.addEventListener("keydown", onBindingKeyDown);
     return () => window.removeEventListener("keydown", onBindingKeyDown);
@@ -193,32 +195,12 @@ export default function Home() {
     []
   );
 
-  const tutorialSteps = [
-    {
-      kicker: "01 / PONTUAÇÃO",
-      title: "LINHAS, NÃO QUEDAS",
-      body: "Você só pontua quando uma linha horizontal fica completa e é eliminada. Soft drop e hard drop servem para jogar melhor, mas não concedem pontos.",
-      stat: "60 / 160 / 320 / 560 × FASE",
-    },
-    {
-      kicker: "02 / PROGRESSÃO",
-      title: "O CIRCUITO ACELERA",
-      body: "A cada oito linhas eliminadas você avança uma fase. O intervalo de encaixe diminui progressivamente, então a leitura e a decisão precisam acompanhar o ritmo.",
-      stat: "FASE 01 → 820ms · FASE 10 → ~275ms",
-    },
-    {
-      kicker: "03 / CONTROLE",
-      title: "DOMINE A GRADE",
-      body: "Deslize para mover, toque para girar, deslize para baixo para acelerar e para cima para encaixar. No teclado use as setas e SPACE.",
-      stat: "DESLIZE MOVE · TOQUE GIRA · ESPAÇO ENCAIXA",
-    },
-    {
-      kicker: "04 / IMERSÃO",
-      title: "SINTONIZE O SISTEMA",
-      body: "O menu de configurações controla separadamente os efeitos e a trilha. As preferências ficam salvas neste dispositivo.",
-      stat: "EFEITOS + TRILHA · VOLUME INDEPENDENTE",
-    },
-  ];
+  const tutorialSteps = ([1, 2, 3, 4] as const).map((i) => ({
+    kicker: t(`tutorial.s${i}.kicker`),
+    title: t(`tutorial.s${i}.title`),
+    body: t(`tutorial.s${i}.body`),
+    stat: t(`tutorial.s${i}.stat`),
+  }));
 
   const openSettings = () => {
     if (settingsCloseTimerRef.current !== undefined) window.clearTimeout(settingsCloseTimerRef.current);
@@ -246,7 +228,7 @@ export default function Home() {
     setListeningAction(null);
     setConflictAlert(null);
     window.dispatchEvent(new CustomEvent("neon-blockfall-controls-reset"));
-    setSettingsMessage("CONTROLES PADRÃO RESTAURADOS");
+    setSettingsMessage("settings.defaultsRestored");
     window.setTimeout(() => setSettingsMessage(""), 2200);
   };
   const visibleLocalLeaderboard = useMemo(
@@ -283,12 +265,12 @@ export default function Home() {
     if (newlyUnlocked.length > 0) {
       setUnlockedAchievements(loadUnlockedAchievements());
       newlyUnlocked.forEach((achievement) => {
-        toast("CONQUISTA DESBLOQUEADA", { description: achievement.title });
+        toast(t("toast.achievementUnlocked"), { description: t(`achievement.${achievement.id}.title`) });
       });
     }
     if (isFirstToday && streakRecord.currentStreak > 1) {
-      toast(`SEQUÊNCIA DE ${streakRecord.currentStreak} DIAS`, {
-        description: "Continue jogando todo dia para manter o ritmo.",
+      toast(t("toast.streakTitle", { n: streakRecord.currentStreak }), {
+        description: t("toast.streakBody"),
       });
     }
     void refreshStreakReminder(streakRecord.currentStreak);
@@ -310,41 +292,41 @@ export default function Home() {
       />
 
       {dockOpen && <div className="dock-backdrop" onClick={() => setDockOpen(false)} aria-hidden="true" />}
-      <section className={dockOpen ? "world-dock is-open" : "world-dock"} aria-label="Placar local e sistema de áudio">
-        <button type="button" className="dock-close" onClick={() => setDockOpen(false)} aria-label="Fechar painel">
+      <section className={dockOpen ? "world-dock is-open" : "world-dock"} aria-label={t("dock.aria")}>
+        <button type="button" className="dock-close" onClick={() => setDockOpen(false)} aria-label={t("dock.close")}>
           <X size={14} />
         </button>
         <div className="world-dock-header">
           <span>
             <Trophy size={13} /> NEON BLOCKFALL
             {streak.currentStreak > 0 && (
-              <span className="streak-badge" aria-label={`Sequência de ${streak.currentStreak} dias`}>
+              <span className="streak-badge" aria-label={t("dock.streakAria", { n: streak.currentStreak })}>
                 <Flame size={11} /> {streak.currentStreak}
               </span>
             )}
           </span>
-          <button type="button" className="world-toggle" onClick={openSettings} aria-label="Abrir configurações">
+          <button type="button" className="world-toggle" onClick={openSettings} aria-label={t("dock.openSettings")}>
             <Settings2 size={14} />
           </button>
         </div>
 
-        <div className="sound-panel" aria-label="Controles de áudio">
+        <div className="sound-panel" aria-label={t("dock.audioAria")}>
           <div className="sound-panel-heading">
             <span>
-              <Settings2 size={11} /> SISTEMA DE ÁUDIO
+              <Settings2 size={11} /> {t("dock.audioSystem")}
             </span>
-            <button type="button" className="settings-open" onClick={openSettings} aria-label="Abrir configurações">
+            <button type="button" className="settings-open" onClick={openSettings} aria-label={t("dock.openSettings")}>
               <Settings2 size={12} />
             </button>
           </div>
           <div className="sound-row">
             <span>
-              <Volume2 size={11} /> EFEITOS
+              <Volume2 size={11} /> {t("dock.sfxShort")}
             </span>
             <button
               type="button"
               className="audio-mute"
-              aria-label={audioMuted ? "Ativar efeitos sonoros" : "Silenciar efeitos sonoros"}
+              aria-label={audioMuted ? t("dock.sfxOn") : t("dock.sfxOff")}
               onClick={() => {
                 const next = !audioMuted;
                 setAudioMutedState(next);
@@ -354,7 +336,7 @@ export default function Home() {
               {audioMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
             </button>
             <input
-              aria-label="Volume dos efeitos sonoros"
+              aria-label={t("dock.sfxVolume")}
               type="range"
               min="0"
               max="1"
@@ -369,12 +351,12 @@ export default function Home() {
           </div>
           <div className="sound-row">
             <span>
-              <Volume2 size={11} /> TRILHA
+              <Volume2 size={11} /> {t("dock.musicShort")}
             </span>
             <button
               type="button"
               className="audio-mute"
-              aria-label={musicMuted ? "Ativar trilha sonora" : "Silenciar trilha sonora"}
+              aria-label={musicMuted ? t("dock.musicOn") : t("dock.musicOff")}
               onClick={() => {
                 const next = !musicMuted;
                 setMusicMutedState(next);
@@ -385,7 +367,7 @@ export default function Home() {
               {musicMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
             </button>
             <input
-              aria-label="Volume da trilha sonora"
+              aria-label={t("dock.musicVolume")}
               type="range"
               min="0"
               max="1"
@@ -412,10 +394,10 @@ export default function Home() {
                 setTutorialOpen(true);
               }}
             >
-              ? COMO JOGAR
+              ? {t("dock.howToPlay")}
             </button>
             <button type="button" className="tutorial-launch" onClick={openSettings}>
-              CONFIGURAÇÕES
+              {t("settings.title")}
             </button>
           </div>
         </div>
@@ -423,22 +405,24 @@ export default function Home() {
         <div className="local-leaderboard-panel">
           <div className="profile-title">
             <span>
-              <Trophy size={13} /> TOP LOCAL
+              <Trophy size={13} /> {t("dock.topLocal")}
             </span>
-            <small>ESTE DISPOSITIVO · {localLeaderboard.length}/10</small>
+            <small>
+              {t("dock.thisDevice")} · {localLeaderboard.length}/10
+            </small>
           </div>
           <div className="local-leaderboard-tools">
             <label>
-              <span>FILTRAR CENÁRIO</span>
+              <span>{t("dock.filterScenario")}</span>
               <select
-                aria-label="Filtrar ranking local por cenário"
+                aria-label={t("dock.filterScenarioAria")}
                 value={localLeaderboardFilter}
                 onChange={(event) => updateLocalLeaderboardFilter(event.target.value)}
               >
-                <option value="all">TODOS OS CENÁRIOS</option>
+                <option value="all">{t("dock.allScenarios")}</option>
                 {ARENA_SCENARIOS.map((scenario) => (
                   <option key={scenario.id} value={scenario.id}>
-                    {scenario.label}
+                    {t(`scenario.${scenario.id}.label`)}
                   </option>
                 ))}
               </select>
@@ -449,13 +433,13 @@ export default function Home() {
               onClick={() => setClearLocalOpen(true)}
               disabled={localLeaderboard.length === 0}
             >
-              <Trash2 size={11} /> LIMPAR
+              <Trash2 size={11} /> {t("dock.clearBtn")}
             </button>
           </div>
           {localLeaderboard.length === 0 ? (
-            <div className="leaderboard-empty">TERMINE UMA PARTIDA PARA GRAVAR SEU PRIMEIRO RECORDE</div>
+            <div className="leaderboard-empty">{t("dock.firstRecord")}</div>
           ) : visibleLocalLeaderboard.length === 0 ? (
-            <div className="leaderboard-empty">NENHUM RECORDE NESTE CENÁRIO</div>
+            <div className="leaderboard-empty">{t("dock.noRecordScenario")}</div>
           ) : (
             <div className="leaderboard-list">
               {visibleLocalLeaderboard.map((entry, index) => (
@@ -478,7 +462,7 @@ export default function Home() {
         <div className="achievements-panel">
           <div className="profile-title">
             <span>
-              <Award size={13} /> CONQUISTAS
+              <Award size={13} /> {t("dock.achievements")}
             </span>
             <small>
               {unlockedAchievements.length}/{ACHIEVEMENTS.length}
@@ -491,8 +475,8 @@ export default function Home() {
                 <div key={achievement.id} className={unlocked ? "achievement-card unlocked" : "achievement-card"}>
                   <b aria-hidden="true">{unlocked ? <Trophy size={12} /> : <Award size={12} />}</b>
                   <span>
-                    <strong>{achievement.title}</strong>
-                    <small>{achievement.description}</small>
+                    <strong>{t(`achievement.${achievement.id}.title`)}</strong>
+                    <small>{t(`achievement.${achievement.id}.description`)}</small>
                   </span>
                 </div>
               );
@@ -512,17 +496,15 @@ export default function Home() {
           >
             <div className="local-clear-heading">
               <Trash2 size={16} />
-              <span id="local-clear-title">LIMPAR TOP LOCAL?</span>
+              <span id="local-clear-title">{t("dock.clearTop")}</span>
             </div>
-            <p id="local-clear-description">
-              Esta ação remove as pontuações salvas neste navegador e não pode ser desfeita.
-            </p>
+            <p id="local-clear-description">{t("dock.clearBody")}</p>
             <div className="local-clear-actions">
               <button type="button" className="local-clear-cancel" onClick={() => setClearLocalOpen(false)}>
-                CANCELAR
+                {t("dock.clearCancel")}
               </button>
               <button type="button" className="local-clear-confirm" onClick={confirmClearLocalLeaderboard}>
-                <Trash2 size={12} /> APAGAR HISTÓRICO
+                <Trash2 size={12} /> {t("dock.clearConfirm")}
               </button>
             </div>
           </section>
@@ -534,22 +516,20 @@ export default function Home() {
           <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <div className="settings-heading">
               <div>
-                <span className="settings-kicker">SYSTEM / SETTINGS</span>
-                <h2 id="settings-title">CONFIGURAÇÕES</h2>
+                <span className="settings-kicker">{t("settings.eyebrow")}</span>
+                <h2 id="settings-title">{t("settings.title")}</h2>
               </div>
-              <button type="button" className="settings-close" onClick={closeSettings} aria-label="Fechar configurações">
+              <button type="button" className="settings-close" onClick={closeSettings} aria-label={t("settings.close")}>
                 <X size={16} />
               </button>
             </div>
-            <p className="settings-copy">
-              Ajuste a paisagem sonora e restaure os comandos da arena sem perder seu progresso.
-            </p>
+            <p className="settings-copy">{t("settings.copy")}</p>
             <SessionSummary snapshot={sessionSnapshot} />
 
             <div className="settings-section">
               <div className="settings-label">
-                <span>EFEITOS SONOROS</span>
-                <b>{audioMuted ? "MUDO" : `${Math.round(audioVolume * 100)}%`}</b>
+                <span>{t("settings.section.sfx")}</span>
+                <b>{audioMuted ? t("settings.mute") : `${Math.round(audioVolume * 100)}%`}</b>
               </div>
               <div className="settings-control">
                 <button
@@ -560,12 +540,12 @@ export default function Home() {
                     setAudioMutedState(next);
                     setAudioMuted(next);
                   }}
-                  aria-label={audioMuted ? "Ativar efeitos sonoros" : "Silenciar efeitos sonoros"}
+                  aria-label={audioMuted ? t("settings.sfxOn") : t("settings.sfxOff")}
                 >
                   {audioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                 </button>
                 <input
-                  aria-label="Volume dos efeitos sonoros nas configurações"
+                  aria-label={t("settings.sfxVolume")}
                   type="range"
                   min="0"
                   max="1"
@@ -582,8 +562,8 @@ export default function Home() {
 
             <div className="settings-section">
               <div className="settings-label">
-                <span>TRILHA CYBERPUNK</span>
-                <b>{musicMuted ? "MUDO" : `${Math.round(musicVolume * 100)}%`}</b>
+                <span>{t("settings.section.music")}</span>
+                <b>{musicMuted ? t("settings.mute") : `${Math.round(musicVolume * 100)}%`}</b>
               </div>
               <div className="settings-control">
                 <button
@@ -595,12 +575,12 @@ export default function Home() {
                     setMusicMuted(next);
                     if (!next) startMusic();
                   }}
-                  aria-label={musicMuted ? "Ativar trilha sonora" : "Silenciar trilha sonora"}
+                  aria-label={musicMuted ? t("settings.musicOn") : t("settings.musicOff")}
                 >
                   {musicMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                 </button>
                 <input
-                  aria-label="Volume da trilha sonora nas configurações"
+                  aria-label={t("settings.musicVolume")}
                   type="range"
                   min="0"
                   max="1"
@@ -617,13 +597,11 @@ export default function Home() {
 
             <div className="settings-section scenario-settings-section">
               <div className="settings-label">
-                <span>CENÁRIO TECNOLÓGICO</span>
-                <b>{ARENA_SCENARIOS.find((item) => item.id === arenaScenario)?.label}</b>
+                <span>{t("settings.section.scenario")}</span>
+                <b>{t(`scenario.${arenaScenario}.label`)}</b>
               </div>
-              <p className="settings-hint">
-                Escolha o ambiente visual da arena. A troca não altera sua partida nem suas pontuações.
-              </p>
-              <div className="scenario-picker" role="list" aria-label="Cenários tecnológicos da arena">
+              <p className="settings-hint">{t("settings.scenarioHint")}</p>
+              <div className="scenario-picker" role="list" aria-label={t("settings.scenarioAria")}>
                 {ARENA_SCENARIOS.map((scenario) => (
                   <button
                     type="button"
@@ -637,10 +615,10 @@ export default function Home() {
                     style={{ "--scenario-accent": scenario.accent, background: scenario.background } as React.CSSProperties}
                   >
                     <span>
-                      <strong>{scenario.label}</strong>
-                      <small>{scenario.detail}</small>
+                      <strong>{t(`scenario.${scenario.id}.label`)}</strong>
+                      <small>{t(`scenario.${scenario.id}.detail`)}</small>
                     </span>
-                    {arenaScenario === scenario.id && <b>ATIVO</b>}
+                    {arenaScenario === scenario.id && <b>{t("common.active")}</b>}
                   </button>
                 ))}
               </div>
@@ -648,25 +626,24 @@ export default function Home() {
 
             <div className="settings-section controls-section">
               <div className="settings-label">
-                <span>CONTROLES DA ARENA</span>
-                <b>{listeningAction ? "OUVINDO TECLA" : "TECLADO"}</b>
+                <span>{t("settings.section.controls")}</span>
+                <b>{listeningAction ? t("settings.controlsListening") : t("settings.controlsKeyboard")}</b>
               </div>
-              <p className="settings-hint">
-                Clique em uma tecla e pressione o comando desejado. ESC cancela a escuta. No celular, o jogo usa gestos de
-                toque.
-              </p>
+              <p className="settings-hint">{t("settings.controlsHint")}</p>
               {conflictAlert && (
                 <div className="control-conflict-alert" role="alert" aria-live="assertive">
                   <AlertTriangle size={15} />
                   <span>
-                    <strong>CONFLITO DETECTADO</strong>
+                    <strong>{t("settings.conflict")}</strong>
                     <small>
-                      {formatControlKey(conflictAlert.key)} já estava em <b>{controlLabel(conflictAlert.existingAction)}</b>.
-                      A ação anterior recebeu um fallback para continuar funcional.
+                      {t("settings.conflictBody", {
+                        key: formatControlKey(conflictAlert.key),
+                        action: t(`control.${conflictAlert.existingAction}.label`),
+                      })}
                     </small>
                   </span>
-                  <button type="button" onClick={() => setConflictAlert(null)} aria-label="Fechar alerta de conflito">
-                    OK
+                  <button type="button" onClick={() => setConflictAlert(null)} aria-label={t("settings.conflictClose")}>
+                    {t("settings.conflictOk")}
                   </button>
                 </div>
               )}
@@ -679,8 +656,8 @@ export default function Home() {
                   return (
                     <div className={hasConflict ? "control-remap-row has-conflict" : "control-remap-row"} key={item.action}>
                       <span>
-                        <strong>{item.label}</strong>
-                        <small>{item.description}</small>
+                        <strong>{t(`control.${item.action}.label`)}</strong>
+                        <small>{t(`control.${item.action}.description`)}</small>
                       </span>
                       <div className="control-binding-actions">
                         <button
@@ -689,9 +666,9 @@ export default function Home() {
                             listening ? "key-binding is-listening" : hasConflict ? "key-binding has-conflict" : "key-binding"
                           }
                           onClick={() => setListeningAction(item.action)}
-                          aria-label={`Remapear teclado de ${item.label}`}
+                          aria-label={t("settings.remapAria", { label: t(`control.${item.action}.label`) })}
                         >
-                          {listening ? "PRESSIONE…" : formatControlKey(key)}
+                          {listening ? t("common.pressKey") : formatControlKey(key)}
                         </button>
                       </div>
                     </div>
@@ -699,19 +676,43 @@ export default function Home() {
                 })}
               </div>
               <button type="button" className="reset-controls" onClick={resetControls}>
-                <RotateCcw size={13} /> RESTAURAR PADRÕES
+                <RotateCcw size={13} /> {t("settings.restoreDefaults")}
               </button>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-label">
+                <span>{t("settings.section.language")}</span>
+              </div>
+              <select
+                className="language-select"
+                aria-label={t("settings.section.language")}
+                value={localePreference}
+                onChange={(event) => setLocalePreference(event.target.value as LocalePreference)}
+              >
+                <option value="auto">{t("settings.language.auto")}</option>
+                {SUPPORTED_LOCALES.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc === "pt-BR"
+                      ? t("settings.language.ptBR")
+                      : loc === "en-US"
+                        ? t("settings.language.enUS")
+                        : t("settings.language.esES")}
+                  </option>
+                ))}
+              </select>
+              <p className="settings-hint">{t("settings.language.autoHint", { detected: detectLocale() })}</p>
             </div>
 
             <div className="settings-legal">
               <a href="/privacy.html" target="_blank" rel="noopener noreferrer">
-                POLÍTICA DE PRIVACIDADE
+                {t("settings.privacy")}
               </a>
-              <span>© 2026 x7rG ENTERPRISE™</span>
+              <span>{t("settings.credit")}</span>
             </div>
-            {settingsMessage && <div className="sync-note">{settingsMessage}</div>}
+            {settingsMessage && <div className="sync-note">{t(settingsMessage)}</div>}
             <button type="button" className="action-button primary settings-done" onClick={closeSettings}>
-              SALVAR E VOLTAR
+              {t("settings.save")}
             </button>
           </section>
         </div>
@@ -741,7 +742,7 @@ export default function Home() {
             </div>
             <div className="tutorial-actions">
               <button type="button" className="tutorial-skip" onClick={closeTutorial}>
-                PULAR TUTORIAL
+                {t("tutorial.skip")}
               </button>
               {tutorialStep < tutorialSteps.length - 1 ? (
                 <button
@@ -749,11 +750,11 @@ export default function Home() {
                   className="action-button primary"
                   onClick={() => setTutorialStep((step) => step + 1)}
                 >
-                  PRÓXIMO
+                  {t("tutorial.next")}
                 </button>
               ) : (
                 <button type="button" className="action-button primary" onClick={closeTutorial}>
-                  ENTRAR NA ARENA
+                  {t("tutorial.start")}
                 </button>
               )}
             </div>

@@ -26,10 +26,10 @@ class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="errorboundary-screen">
         <AlertTriangle size={48} className="errorboundary-icon" aria-hidden="true" />
-        <h2>Algo deu errado</h2>
-        <p>Ocorreu um erro inesperado. Recarregue a página para voltar ao jogo.</p>
+        <h2>System failure / Falha no sistema</h2>
+        <p>An unexpected error occurred. Reload the page to reconnect.</p>
         <button type="button" className="action-button primary" onClick={() => window.location.reload()}>
-          <RotateCcw size={16} /> RECARREGAR
+          <RotateCcw size={16} /> RELOAD
         </button>
       </div>
     );
