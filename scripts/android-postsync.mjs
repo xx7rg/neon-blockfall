@@ -6,15 +6,21 @@
 //   2. versionCode / versionName vindos do package.json (+ env ANDROID_VERSION_CODE)
 //   3. signingConfig de release lendo android/keystore.properties, se existir
 //      (o CI escreve esse arquivo a partir dos segredos; sem ele, nada muda)
+//   4. compileSdkVersion/targetSdkVersion do template do Capacitor (35) sobem
+//      pro mínimo exigido pela Play Store no momento (a Google reajusta isso
+//      todo ano; ver ANDROID_TARGET_SDK abaixo quando o Play Console reclamar
+//      de novo no futuro)
 //
 // Se a pasta android/ não existir, não faz nada.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ADMOB_APP_ID = "ca-app-pub-2635930849231174~7000204339";
+const ANDROID_TARGET_SDK = 36;
 const ANDROID_DIR = resolve("android");
 const MANIFEST = resolve(ANDROID_DIR, "app/src/main/AndroidManifest.xml");
 const APP_GRADLE = resolve(ANDROID_DIR, "app/build.gradle");
+const VARIABLES_GRADLE = resolve(ANDROID_DIR, "variables.gradle");
 
 if (!existsSync(ANDROID_DIR)) {
   console.log("[android-postsync] android/ ausente — nada a fazer.");
@@ -95,5 +101,21 @@ if (existsSync(APP_GRADLE)) {
     );
   } else {
     console.log("[android-postsync] build.gradle: já estava atualizado.");
+  }
+}
+
+/* ---------- 4. variables.gradle: compileSdkVersion/targetSdkVersion ---------- */
+if (existsSync(VARIABLES_GRADLE)) {
+  let v = readFileSync(VARIABLES_GRADLE, "utf8");
+  const before = v;
+
+  v = v.replace(/compileSdkVersion\s*=\s*\d+/, `compileSdkVersion = ${ANDROID_TARGET_SDK}`);
+  v = v.replace(/targetSdkVersion\s*=\s*\d+/, `targetSdkVersion = ${ANDROID_TARGET_SDK}`);
+
+  if (v !== before) {
+    writeFileSync(VARIABLES_GRADLE, v);
+    console.log(`[android-postsync] variables.gradle: compile/targetSdkVersion = ${ANDROID_TARGET_SDK}.`);
+  } else {
+    console.log("[android-postsync] variables.gradle: já estava atualizado.");
   }
 }
