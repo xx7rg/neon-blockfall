@@ -64,7 +64,8 @@ export type GameEvent =
   | { type: "hold" }
   | { type: "phase"; level: number; modifier: ModifierId }
   | { type: "garbage" }
-  | { type: "checkpoint"; ok: boolean };
+  | { type: "checkpoint"; ok: boolean }
+  | { type: "revive" };
 
 export type SnapshotListener = (snapshot: GameSnapshot) => void;
 export type EventListener = (event: GameEvent) => void;

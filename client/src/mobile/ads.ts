@@ -14,6 +14,12 @@ const AD_UNITS = {
     android: "ca-app-pub-2635930849231174/4072612497",
     ios: "ca-app-pub-3940256099942544/4411468910",
   },
+  // TODO: criar uma unidade de VÍDEO PREMIADO real no AdMob e colar aqui.
+  // Por enquanto usa os IDs de teste oficiais do Google (não pagam nada).
+  rewarded: {
+    android: "ca-app-pub-3940256099942544/5224354917",
+    ios: "ca-app-pub-3940256099942544/1712485313",
+  },
 };
 
 // Anúncios REAIS só quando o build de produção passa VITE_ADS_TESTING=false.
@@ -85,6 +91,40 @@ async function preloadInterstitial() {
     interstitialLoaded = true;
   } catch {
     interstitialLoaded = false;
+  }
+}
+
+/**
+ * Vídeo premiado para "continuar" depois do fim de jogo.
+ * Resolve `true` só se o usuário assistiu e ganhou a recompensa.
+ * No web (sem plugin nativo) resolve `false` — o chamador trata o modo web à parte.
+ */
+export async function showRewardedForContinue(): Promise<boolean> {
+  if (!adsEnabled() || !adsReady) return false;
+  try {
+    const { AdMob, RewardAdPluginEvents } = await import("@capacitor-community/admob");
+    await AdMob.prepareRewardVideoAd({ adId: AD_UNITS.rewarded[platform()], isTesting: IS_TESTING });
+
+    const rewarded = await new Promise<boolean>((resolve) => {
+      let settled = false;
+      const handles: Array<{ remove: () => void }> = [];
+      const finish = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        handles.forEach((h) => h.remove());
+        resolve(value);
+      };
+      void AdMob.addListener(RewardAdPluginEvents.Rewarded, () => finish(true)).then((h) => handles.push(h));
+      void AdMob.addListener(RewardAdPluginEvents.Dismissed, () => finish(false)).then((h) => handles.push(h));
+      void AdMob.addListener(RewardAdPluginEvents.FailedToShow, () => finish(false)).then((h) => handles.push(h));
+      void AdMob.showRewardVideoAd().catch(() => finish(false));
+      // trava de segurança: nunca deixa a promessa pendurada
+      window.setTimeout(() => finish(false), 90_000);
+    });
+    return rewarded;
+  } catch (error) {
+    console.warn("[ads] vídeo premiado falhou", error);
+    return false;
   }
 }
 

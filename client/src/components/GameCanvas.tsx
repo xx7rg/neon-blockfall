@@ -6,6 +6,7 @@ import {
   ArrowUp,
   CalendarClock,
   ChevronsDown,
+  Flag,
   Infinity as InfinityIcon,
   Layers,
   Pause,
@@ -13,12 +14,24 @@ import {
   RotateCcw,
   Share2,
   Sparkles,
+  Timer,
   Trophy,
 } from "lucide-react";
 import { createGameRenderer, type GameHandle } from "@/game/renderer";
+import { adsEnabled, showRewardedForContinue } from "@/mobile/native";
 import { getCells, NON_ROTATING, PIECE_COLORS } from "@/game/pieces";
 import { LINES_PER_PHASE, type GameSnapshot, type PieceKind, type SavedRun } from "@/game/types";
 import { PHASE_MODIFIERS, type ModifierId } from "@/game/modifiers";
+import {
+  formatClock,
+  loadModeRecords,
+  recordSprint,
+  recordUltra,
+  SPRINT_LINES,
+  ULTRA_MS,
+  type ModeRecords,
+  type RunMode,
+} from "@/game/modes";
 import {
   dailySeed,
   dailyShareText,
@@ -50,6 +63,10 @@ import { ARENA_SCENARIOS, getArenaScenario, type ArenaScenarioId } from "@/game/
 import { resolveTouchAction } from "@/game/touch-controls";
 
 const RUN_KEY = "neon-blockfall-run";
+// "Continuar" pós-fim de jogo (estilo fliperama): quantas vezes por partida e
+// quantos segundos o jogador tem para decidir antes de encerrar de vez.
+const MAX_REVIVES = 1;
+const REVIVE_COUNTDOWN_S = 6;
 // Retomada é para recuperar de uma interrupção real (fechou a aba, trocou de app),
 // não para transformar todo F5 na mesma partida. Passou disso, começa nova e aleatória.
 const RESUME_MAX_AGE_MS = 30 * 60 * 1000;
@@ -262,6 +279,12 @@ export default function GameCanvas({
   const onSnapshotRef = useRef(onSnapshot);
   const gameOverNotifiedRef = useRef(false);
   const runStartedAtRef = useRef(Date.now());
+  const revivesUsedRef = useRef(0);
+  const pendingGameOverRef = useRef<GameSnapshot | null>(null);
+  const finalizeGameOverRef = useRef<(snapshot: GameSnapshot) => void>(() => {});
+  const [reviveOpen, setReviveOpen] = useState(false);
+  const [reviveBusy, setReviveBusy] = useState(false);
+  const [reviveCountdown, setReviveCountdown] = useState(REVIVE_COUNTDOWN_S);
   onGameOverRef.current = onGameOver;
   onSnapshotRef.current = onSnapshot;
   const startedRef = useRef(false);
@@ -288,6 +311,13 @@ export default function GameCanvas({
   const [dailyMode, setDailyMode] = useState(false);
   const dailyModeRef = useRef(false);
   dailyModeRef.current = dailyMode;
+  const [runMode, setRunMode] = useState<RunMode>("endless");
+  const runModeRef = useRef<RunMode>("endless");
+  runModeRef.current = runMode;
+  const [modeRecords, setModeRecords] = useState<ModeRecords>(() => loadModeRecords());
+  const endTriggeredRef = useRef(false);
+  const modeOutcomeRef = useRef<{ completed: boolean; elapsedMs: number } | null>(null);
+  const [modeOutcome, setModeOutcome] = useState<{ completed: boolean; elapsedMs: number } | null>(null);
   const [dailyBest, setDailyBest] = useState<DailyRecord | null>(() => loadDailyRecord());
   const [dailyResult, setDailyResult] = useState<{ record: DailyRecord; best: DailyRecord; improved: boolean } | null>(null);
   const [dailyShared, setDailyShared] = useState(false);
@@ -373,16 +403,13 @@ export default function GameCanvas({
               d.y = nextSnapshot.active.y;
             }
           }
-          if (nextSnapshot.gameOver && !gameOverNotifiedRef.current) {
-            gameOverNotifiedRef.current = true;
+          const finalizeGameOver = (over: GameSnapshot) => {
             clearSavedRun();
-            playGameOver();
-            vibrate("gameOver");
             if (dailyModeRef.current) {
               const record: DailyRecord = {
-                score: nextSnapshot.score,
-                lines: nextSnapshot.lines,
-                level: nextSnapshot.level,
+                score: over.score,
+                lines: over.lines,
+                level: over.level,
               };
               const previous = loadDailyRecord();
               const best = saveDailyRecord(record);
@@ -390,14 +417,71 @@ export default function GameCanvas({
               setDailyResult({ record, best, improved: !previous || record.score > previous.score });
               setDailyShared(false);
             }
+            const mode = runModeRef.current;
+            const outcome = modeOutcomeRef.current ?? { completed: false, elapsedMs: over.sessionElapsedMs };
+            if (mode === "sprint") {
+              if (outcome.completed) setModeRecords(recordSprint(outcome.elapsedMs).records);
+              setModeOutcome(outcome);
+            } else if (mode === "ultra") {
+              setModeRecords(recordUltra(over.score).records);
+              setModeOutcome({ completed: true, elapsedMs: outcome.elapsedMs });
+            } else {
+              setModeOutcome(null);
+            }
             onGameOverRef.current?.({
-              score: nextSnapshot.score,
-              lines: nextSnapshot.lines,
-              level: nextSnapshot.level,
+              score: over.score,
+              lines: over.lines,
+              level: over.level,
               durationMs: Date.now() - runStartedAtRef.current,
             });
+          };
+          finalizeGameOverRef.current = finalizeGameOver;
+
+          // Fim automático dos modos com meta (antes de tratar o game over natural).
+          if (
+            !nextSnapshot.gameOver &&
+            !preStartRef.current &&
+            !endTriggeredRef.current &&
+            runModeRef.current !== "endless"
+          ) {
+            if (runModeRef.current === "sprint" && nextSnapshot.lines >= SPRINT_LINES) {
+              endTriggeredRef.current = true;
+              modeOutcomeRef.current = { completed: true, elapsedMs: nextSnapshot.sessionElapsedMs };
+              gameRef.current?.world.finish();
+              return;
+            }
+            if (runModeRef.current === "ultra" && nextSnapshot.sessionElapsedMs >= ULTRA_MS) {
+              endTriggeredRef.current = true;
+              modeOutcomeRef.current = { completed: true, elapsedMs: nextSnapshot.sessionElapsedMs };
+              gameRef.current?.world.finish();
+              return;
+            }
+          }
+          if (nextSnapshot.gameOver && runModeRef.current !== "endless" && !modeOutcomeRef.current) {
+            // topou antes da meta
+            modeOutcomeRef.current = { completed: false, elapsedMs: nextSnapshot.sessionElapsedMs };
+          }
+
+          if (nextSnapshot.gameOver && !gameOverNotifiedRef.current) {
+            gameOverNotifiedRef.current = true;
+            playGameOver();
+            vibrate("gameOver");
+            const canRevive =
+              runModeRef.current === "endless" &&
+              !dailyModeRef.current &&
+              revivesUsedRef.current < MAX_REVIVES &&
+              nextSnapshot.lines >= 1;
+            if (canRevive) {
+              pendingGameOverRef.current = nextSnapshot;
+              setReviveCountdown(REVIVE_COUNTDOWN_S);
+              setReviveOpen(true);
+            } else {
+              finalizeGameOver(nextSnapshot);
+            }
           } else if (!nextSnapshot.gameOver) {
             gameOverNotifiedRef.current = false;
+            pendingGameOverRef.current = null;
+            setReviveOpen(false);
           }
           setHighScore((current) => {
             if (nextSnapshot.score <= current) return current;
@@ -555,7 +639,7 @@ export default function GameCanvas({
       const world = gameRef.current?.world;
       if (!world) return;
       const s = world.snapshot;
-      if (s.gameOver || preStartRef.current || dailyModeRef.current) return;
+      if (s.gameOver || preStartRef.current || dailyModeRef.current || runModeRef.current !== "endless") return;
       try {
         window.localStorage.setItem(RUN_KEY, JSON.stringify(world.serialize()));
       } catch {
@@ -615,6 +699,34 @@ export default function GameCanvas({
     phaseTimerRef.current = window.setTimeout(endPhaseTransition, 1400);
   };
 
+  // "Continuar" pós-fim de jogo: encerra de vez (finaliza o game over pendente).
+  const declineRevive = () => {
+    setReviveOpen(false);
+    setReviveBusy(false);
+    const over = pendingGameOverRef.current;
+    pendingGameOverRef.current = null;
+    if (over) finalizeGameOverRef.current(over);
+  };
+
+  // "Continuar": no nativo assiste o vídeo premiado; no web segue direto (teste).
+  const acceptRevive = async () => {
+    if (reviveBusy) return;
+    setReviveBusy(true);
+    const rewarded = adsEnabled() ? await showRewardedForContinue() : true;
+    if (!rewarded) {
+      declineRevive();
+      return;
+    }
+    revivesUsedRef.current += 1;
+    pendingGameOverRef.current = null;
+    gameOverNotifiedRef.current = false;
+    setReviveBusy(false);
+    setReviveOpen(false);
+    const world = gameRef.current?.world;
+    world?.revive();
+    if (world && !settingsOpenRef.current) world.setPaused(false);
+  };
+
   const startRun = () => {
     if (launching) return;
     setLaunching(true);
@@ -624,13 +736,20 @@ export default function GameCanvas({
       setLaunching(false);
       setDailyResult(null);
       setIsNewRecord(false);
+      revivesUsedRef.current = 0;
+      pendingGameOverRef.current = null;
+      setReviveOpen(false);
+      endTriggeredRef.current = false;
+      modeOutcomeRef.current = null;
+      setModeOutcome(null);
+      gameOverNotifiedRef.current = false;
       runStartedAtRef.current = Date.now();
       const world = gameRef.current?.world;
       if (world) {
-        if (dailyMode) {
-          world.reseed(dailySeed());
-          clearSavedRun();
-        }
+        // Toda run começa limpa: cronômetro/linhas zerados e sequência certa
+        // (com seed no Desafio do Dia, aleatória nos demais).
+        world.reseed(dailyMode ? dailySeed() : undefined);
+        clearSavedRun();
         if (!settingsOpenRef.current) world.setPaused(false);
       }
     }, 560);
@@ -645,6 +764,12 @@ export default function GameCanvas({
       setDailyResult(null);
       setDailyShared(false);
       preStartRef.current = false;
+      revivesUsedRef.current = 0;
+      pendingGameOverRef.current = null;
+      setReviveOpen(false);
+      endTriggeredRef.current = false;
+      modeOutcomeRef.current = null;
+      setModeOutcome(null);
       runStartedAtRef.current = Date.now();
     }
     if (action === "pause") setJustResumed(false);
@@ -707,6 +832,24 @@ export default function GameCanvas({
     []
   );
 
+  // Contagem regressiva do "Continuar?": zerou sem decisão → encerra a partida.
+  useEffect(() => {
+    if (!reviveOpen || reviveBusy) return;
+    const id = window.setInterval(() => {
+      setReviveCountdown((n) => {
+        if (n <= 1) {
+          window.clearInterval(id);
+          declineRevive();
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+    // declineRevive só lê refs/setters — seguro fora das deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviveOpen, reviveBusy]);
+
   const phaseFill = Math.round(((LINES_PER_PHASE - snapshot.linesToNextPhase) / LINES_PER_PHASE) * 100);
 
   return (
@@ -747,10 +890,22 @@ export default function GameCanvas({
                 {PHASE_MODIFIERS[snapshot.modifier].label}
               </span>
             )}
-            <span className="status-dot" /> FASE <strong>{snapshot.level.toString().padStart(2, "0")}</strong>
-            <span className="topbar-lines">
-              LINHAS <strong>{snapshot.lines.toString().padStart(3, "0")}</strong>
-            </span>
+            {runMode === "sprint" ? (
+              <span className="mode-readout">
+                <Flag size={11} /> <strong>{snapshot.lines}</strong>/{SPRINT_LINES} · {formatClock(snapshot.sessionElapsedMs)}
+              </span>
+            ) : runMode === "ultra" ? (
+              <span className="mode-readout">
+                <Timer size={11} /> <strong>{formatClock(Math.max(0, ULTRA_MS - snapshot.sessionElapsedMs))}</strong>
+              </span>
+            ) : (
+              <>
+                <span className="status-dot" /> FASE <strong>{snapshot.level.toString().padStart(2, "0")}</strong>
+                <span className="topbar-lines">
+                  LINHAS <strong>{snapshot.lines.toString().padStart(3, "0")}</strong>
+                </span>
+              </>
+            )}
           </div>
           <div className="topbar-actions">
             {onDockRequest && (
@@ -1003,37 +1158,77 @@ export default function GameCanvas({
               ? "Sincronizando ambiente, ritmo e HUD."
               : "Defina o ambiente da run. A física permanece a mesma."}
           </small>
-          {!launching && (
-            <div className="prestart-modes" role="radiogroup" aria-label="Modo de jogo">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!dailyMode}
-                className={!dailyMode ? "prestart-mode is-active" : "prestart-mode"}
-                onClick={() => setDailyMode(false)}
-              >
-                <span className="prestart-mode-head">
-                  <InfinityIcon size={14} /> PARTIDA LIVRE
-                </span>
-                <small>Sequência aleatória, sem fim.</small>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={dailyMode}
-                className={dailyMode ? "prestart-mode is-active" : "prestart-mode"}
-                onClick={() => setDailyMode(true)}
-              >
-                <span className="prestart-mode-head">
-                  <CalendarClock size={14} /> DESAFIO DO DIA
-                </span>
-                <small>
-                  {todayKey()} · mesma sequência para todos
-                  {dailyBest ? ` · recorde ${dailyBest.score.toLocaleString("pt-BR")}` : ""}
-                </small>
-              </button>
-            </div>
-          )}
+          {!launching &&
+            (() => {
+              const activeKey = dailyMode ? "daily" : runMode;
+              const pick = (key: "endless" | "daily" | "sprint" | "ultra") => {
+                if (key === "daily") {
+                  setDailyMode(true);
+                  setRunMode("endless");
+                } else {
+                  setDailyMode(false);
+                  setRunMode(key);
+                }
+              };
+              const items: Array<{
+                key: "endless" | "daily" | "sprint" | "ultra";
+                icon: React.ReactNode;
+                title: string;
+                sub: string;
+              }> = [
+                {
+                  key: "endless",
+                  icon: <InfinityIcon size={14} />,
+                  title: "PARTIDA LIVRE",
+                  sub: "Sequência aleatória, sem fim.",
+                },
+                {
+                  key: "daily",
+                  icon: <CalendarClock size={14} />,
+                  title: "DESAFIO DO DIA",
+                  sub: `${todayKey()} · igual para todos${
+                    dailyBest ? ` · rec. ${dailyBest.score.toLocaleString("pt-BR")}` : ""
+                  }`,
+                },
+                {
+                  key: "sprint",
+                  icon: <Flag size={14} />,
+                  title: `SPRINT ${SPRINT_LINES}`,
+                  sub: `Corra até ${SPRINT_LINES} linhas${
+                    modeRecords.sprintBestMs != null ? ` · rec. ${formatClock(modeRecords.sprintBestMs)}` : ""
+                  }`,
+                },
+                {
+                  key: "ultra",
+                  icon: <Timer size={14} />,
+                  title: "ULTRA 2:00",
+                  sub: `Máximo de pontos em 2 min${
+                    modeRecords.ultraBestScore != null
+                      ? ` · rec. ${modeRecords.ultraBestScore.toLocaleString("pt-BR")}`
+                      : ""
+                  }`,
+                },
+              ];
+              return (
+                <div className="prestart-modes" role="radiogroup" aria-label="Modo de jogo">
+                  {items.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={activeKey === item.key}
+                      className={activeKey === item.key ? "prestart-mode is-active" : "prestart-mode"}
+                      onClick={() => pick(item.key)}
+                    >
+                      <span className="prestart-mode-head">
+                        {item.icon} {item.title}
+                      </span>
+                      <small>{item.sub}</small>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           {!launching && (
             <div className="prestart-scenarios">
               {ARENA_SCENARIOS.map((scenario) => (
@@ -1062,18 +1257,92 @@ export default function GameCanvas({
         </div>
       )}
 
-      {(snapshot.paused || snapshot.gameOver) && !preStartOpen && !settingsOpen && !phaseTransition && (
+      {reviveOpen && !settingsOpen && (
+        <div className="state-overlay revive-overlay">
+          <span className="state-kicker">SINAL PERDIDO</span>
+          <strong>CONTINUAR?</strong>
+          <p className="revive-score">{formatScore(snapshot.score)} PTS</p>
+          <div
+            className="revive-ring"
+            aria-hidden="true"
+            data-busy={reviveBusy ? "1" : undefined}
+          >
+            <span>{reviveBusy ? "…" : reviveCountdown}</span>
+          </div>
+          <button
+            type="button"
+            className="action-button revive-go"
+            onClick={acceptRevive}
+            disabled={reviveBusy}
+          >
+            <Play size={16} />{" "}
+            {reviveBusy
+              ? "CARREGANDO ANÚNCIO…"
+              : adsEnabled()
+                ? "ASSISTIR E CONTINUAR"
+                : "CONTINUAR (TESTE)"}
+          </button>
+          <button
+            type="button"
+            className="state-ghost-button"
+            onClick={declineRevive}
+            disabled={reviveBusy}
+          >
+            ENCERRAR
+          </button>
+        </div>
+      )}
+
+      {(snapshot.paused || snapshot.gameOver) && !reviveOpen && !preStartOpen && !settingsOpen && !phaseTransition && (
         <div className="state-overlay">
           <span className="state-kicker">
             {snapshot.gameOver
-              ? dailyMode
-                ? "DESAFIO DO DIA · ENCERRADO"
-                : "SINAL ENCERRADO"
+              ? runMode === "sprint"
+                ? modeOutcome?.completed
+                  ? `SPRINT ${SPRINT_LINES} · COMPLETO`
+                  : "SPRINT · INTERROMPIDO"
+                : runMode === "ultra"
+                  ? "ULTRA · TEMPO ESGOTADO"
+                  : dailyMode
+                    ? "DESAFIO DO DIA · ENCERRADO"
+                    : "SINAL ENCERRADO"
               : justResumed
                 ? "PARTIDA RETOMADA"
                 : "SISTEMA EM PAUSA"}
           </span>
-          <strong>{snapshot.gameOver ? "FIM DE JOGO" : justResumed ? "CONTINUAR?" : "EM PAUSA"}</strong>
+          <strong>
+            {snapshot.gameOver
+              ? runMode === "sprint" && modeOutcome?.completed
+                ? "SPRINT!"
+                : runMode === "ultra"
+                  ? "TEMPO!"
+                  : "FIM DE JOGO"
+              : justResumed
+                ? "CONTINUAR?"
+                : "EM PAUSA"}
+          </strong>
+          {snapshot.gameOver && runMode === "sprint" && modeOutcome && (
+            <div className="daily-result mode-result">
+              <p>{modeOutcome.completed ? `${SPRINT_LINES} LINHAS` : `${snapshot.lines}/${SPRINT_LINES} LINHAS`}</p>
+              <strong>{formatClock(modeOutcome.elapsedMs)}</strong>
+              <small>
+                {modeRecords.sprintBestMs != null
+                  ? `MELHOR TEMPO · ${formatClock(modeRecords.sprintBestMs)}`
+                  : "SEM RECORDE AINDA"}
+              </small>
+            </div>
+          )}
+          {snapshot.gameOver && runMode === "ultra" && (
+            <div className="daily-result mode-result">
+              <p>2:00</p>
+              <strong>{snapshot.score.toLocaleString("pt-BR")} PTS</strong>
+              <small>
+                {modeRecords.ultraBestScore != null
+                  ? `MELHOR · ${modeRecords.ultraBestScore.toLocaleString("pt-BR")} PTS`
+                  : "SEM RECORDE AINDA"}
+              </small>
+            </div>
+          )}
           {snapshot.gameOver && dailyMode && dailyResult && (
             <div className="daily-result">
               <p>{todayKey()}</p>
@@ -1090,7 +1359,7 @@ export default function GameCanvas({
               </button>
             </div>
           )}
-          {snapshot.gameOver && !dailyMode && (
+          {snapshot.gameOver && !dailyMode && runMode !== "sprint" && (
             <p className={isNewRecord ? "near-miss is-record" : "near-miss"}>
               {isNewRecord
                 ? "NOVO RECORDE PESSOAL!"
@@ -1127,7 +1396,8 @@ export default function GameCanvas({
 
       {isDebug && (
         <pre className="debug-hud" aria-hidden="true">
-          {`drop ${snapshot.dropInterval}ms${snapshot.pulseActive ? " ·PULSE" : ""}
+          {`vp ${typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "?"} · mode ${runMode}
+drop ${snapshot.dropInterval}ms${snapshot.pulseActive ? " ·PULSE" : ""}
 mod ${snapshot.modifier} · fase ${snapshot.level}
 pts/s ${dbg.ptsPerSec} · steps/s ${dbg.stepsPerSec}
 score ${snapshot.score} · y ${snapshot.active.y} · tick ${snapshot.tick}

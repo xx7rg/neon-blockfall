@@ -20,4 +20,5 @@ export async function initNativeShell() {
   void initAds();
 }
 
-export { onGameOverAd } from "./ads";
+export { onGameOverAd, showRewardedForContinue } from "./ads";
+export { adsEnabled } from "./ads";

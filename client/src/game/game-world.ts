@@ -310,6 +310,13 @@ export class GameWorld {
     this.emit();
   }
 
+  /** Encerra a partida imediatamente (usado pelos modos Sprint/Ultra ao bater a meta). */
+  finish() {
+    if (this.gameOver) return;
+    this.gameOver = true;
+    this.emit();
+  }
+
   togglePause() {
     this.setPaused(!this.paused);
   }
@@ -378,6 +385,37 @@ export class GameWorld {
     this.gameOver = false;
     this.lastClearCount = 0;
     this.tickCount = 0;
+    this.emit();
+  }
+
+  /**
+   * Continua a partida atual depois de um "fim de jogo": limpa espaço no topo
+   * (mantém a base da pilha), reaparece uma peça e preserva placar/linhas/fase.
+   * Usado no fluxo de "assistir anúncio e continuar".
+   */
+  revive() {
+    if (!this.gameOver) return;
+    const clearRows = Math.round(BOARD_HEIGHT * 0.6);
+    for (let y = 0; y < clearRows; y += 1) {
+      this.board[y] = Array<CellValue>(BOARD_WIDTH).fill(null);
+    }
+    this.gameOver = false;
+    this.paused = false;
+    this.holdLocked = false;
+    this.combo = -1;
+    this.lockTimer = 0;
+    this.lockResets = 0;
+    this.garbageTimer = 0;
+    this.pulseTimer = 0;
+    this.checkpoint = null;
+    this.active = this.spawnPiece(this.queue.shift() as PieceKind);
+    this.refillQueue();
+    if (this.collides(this.active)) {
+      // pilha ainda encostando no teto: limpa tudo acima da base
+      for (let y = 0; y < BOARD_HEIGHT - 4; y += 1) this.board[y] = Array<CellValue>(BOARD_WIDTH).fill(null);
+      this.active = this.spawnPiece(this.active.kind);
+    }
+    this.emitEvent({ type: "revive" });
     this.emit();
   }
 
