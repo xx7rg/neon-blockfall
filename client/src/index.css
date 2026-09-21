@@ -655,7 +655,7 @@ h1 span { color: var(--cyan); }
   .preview-grid { width: 54px; height: 42px; margin: 5px auto 4px; }
   .metrics-card { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .metrics-card .metric-row { display: grid; gap: 3px; }
-  .rail-actions { grid-column: 1 / -1; }
+  .rail-actions { grid-column: 1 / -1; position: sticky; bottom: 0; z-index: 2; backdrop-filter: blur(6px); }
   .rail-actions .action-button { padding-block: 7px; }
   .control-deck { left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: max(5px, env(safe-area-inset-bottom)); min-height: 48px; }
 }
@@ -666,6 +666,11 @@ h1 span { color: var(--cyan); }
   .game-stage { gap: 10px; }
   .arena-viewport { height: min(70vh, 270px); height: min(70svh, 270px); }
   .hud-rail { max-height: calc(100vh - 92px); max-height: calc(100svh - 92px); }
+}
+
+/* Celular estreito em paisagem (deck fixo embaixo): a coluna do HUD terminava sob o deck e cobria o PAUSA/reiniciar; ela agora acaba acima dele. */
+@media (orientation: landscape) and (max-width: 640px) {
+  .hud-rail { max-height: calc(100vh - 122px); max-height: calc(100svh - 122px); }
 }
 
 /* On portrait phones the world panel belongs to the document flow, never over the arena. */
@@ -1027,6 +1032,8 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
     scrollbar-width: thin;
   }
   .hud-rail > * { flex: 0 0 auto !important; width: 100% !important; margin: 0 !important; }
+  /* A coluna rola por dentro; PAUSA e reiniciar são o último item e saíam da vista quando a altura era curta (abaixo de ~740px). Ficam presos na base da coluna. */
+  .hud-rail > .rail-actions { position: sticky; bottom: 0; z-index: 2; backdrop-filter: blur(6px); }
   .hud-card { min-height: 0 !important; padding: 11px 13px !important; }
   .command-card { display: none !important; }
   .queue-grid { margin: 0 !important; grid-template-columns: auto minmax(0, 1fr) !important; gap: 10px !important; }
