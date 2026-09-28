@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Jogo arcade de blocos que caem. Jogável offline, com ranking online. Publicado por x7rG ENTERPRISE™.",
+  "description": "Jogo arcade de blocos que caem, jogável offline, com modos variados, conquistas e ranking local. Publicado por x7rG ENTERPRISE™.",
   "author": "x7rG ENTERPRISE™",
   "license": "UNLICENSED",
   "scripts": {

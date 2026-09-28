@@ -175,9 +175,9 @@ export const esES: Dictionary = {
   "tutorial.next": "SIGUIENTE",
   "tutorial.start": "EMPEZAR",
   "tutorial.s1.kicker": "01 / PUNTUACIÓN",
-  "tutorial.s1.title": "LÍNEAS, NO CAÍDAS",
+  "tutorial.s1.title": "LAS LÍNEAS VALEN MÁS",
   "tutorial.s1.body":
-    "Solo puntúas cuando una línea horizontal se completa y se elimina. El soft drop y el hard drop ayudan a jugar mejor, pero no dan puntos.",
+    "Las líneas completas dan la mayoría de los puntos. El soft drop concede 1 punto por celda y el hard drop 2 puntos por celda recorrida.",
   "tutorial.s1.stat": "60 / 160 / 320 / 560 × FASE",
   "tutorial.s2.kicker": "02 / PROGRESIÓN",
   "tutorial.s2.title": "EL CIRCUITO SE ACELERA",

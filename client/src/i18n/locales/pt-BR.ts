@@ -174,9 +174,9 @@ export const ptBR = {
   "tutorial.next": "PRÓXIMO",
   "tutorial.start": "COMEÇAR",
   "tutorial.s1.kicker": "01 / PONTUAÇÃO",
-  "tutorial.s1.title": "LINHAS, NÃO QUEDAS",
+  "tutorial.s1.title": "LINHAS VALEM MAIS",
   "tutorial.s1.body":
-    "Você só pontua quando uma linha horizontal fica completa e é eliminada. Soft drop e hard drop servem para jogar melhor, mas não concedem pontos.",
+    "Linhas completas dão a maior parte dos pontos. O soft drop concede 1 ponto por célula e o hard drop concede 2 pontos por célula percorrida.",
   "tutorial.s1.stat": "60 / 160 / 320 / 560 × FASE",
   "tutorial.s2.kicker": "02 / PROGRESSÃO",
   "tutorial.s2.title": "O CIRCUITO ACELERA",

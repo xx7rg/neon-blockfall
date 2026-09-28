@@ -175,9 +175,9 @@ export const enUS: Dictionary = {
   "tutorial.next": "NEXT",
   "tutorial.start": "START",
   "tutorial.s1.kicker": "01 / SCORING",
-  "tutorial.s1.title": "LINES, NOT DROPS",
+  "tutorial.s1.title": "LINES SCORE MORE",
   "tutorial.s1.body":
-    "You only score when a full horizontal line is cleared. Soft and hard drop help you play better, but award no points.",
+    "Cleared lines award most of your points. Soft drop awards 1 point per cell and hard drop awards 2 points per cell traveled.",
   "tutorial.s1.stat": "60 / 160 / 320 / 560 × PHASE",
   "tutorial.s2.kicker": "02 / PROGRESSION",
   "tutorial.s2.title": "THE CIRCUIT SPEEDS UP",

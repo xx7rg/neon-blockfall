@@ -13,7 +13,7 @@ Neon Blockfall
 ## Descrição curta  (máx. 80)
 
 ```
-Blocos neon que caem, fases com modificadores e ranking pra desafiar amigos.
+Blocos neon que caem, modos variados, conquistas e recordes salvos no aparelho.
 ```
 
 ## Descrição completa  (máx. 4000)
@@ -38,9 +38,9 @@ E checkpoints com meta de linhas por tempo nas fases múltiplas de 5.
 Todo dia, a mesma sequência de peças para todo mundo. Jogue quantas vezes
 quiser; só a sua melhor pontuação do dia conta. Compartilhe o resultado.
 
-▸ RANKING ONLINE
-Placar global e de amigos pelo Google Play Games — dá para ver onde você
-está e mandar aquela provocação no grupo.
+▸ RECORDES E CONQUISTAS
+Ranking local com as 10 melhores partidas, filtros por cenário, sequência
+de dias jogados e nove conquistas para desbloquear.
 
 ▸ FEITO PARA O CELULAR
 Deslize para mover, toque para girar, deslize para baixo para encaixar.
@@ -82,21 +82,21 @@ Publicado por x7rG ENTERPRISE™.
 - Substâncias controladas: nenhuma
 - Jogos de azar (simulado ou real): não
 - Compartilha localização / dados do usuário: apenas ID de publicidade (AdMob)
-- Interação online entre usuários: apenas via ranking do Google Play Games
+- Interação online entre usuários: não
 - Esperado: **Livre / 10+** (a confirmar pelo questionário)
 
 ## Data Safety (Segurança dos dados)
 
 - Coleta: **ID de publicidade** (para publicidade/marketing e análise) — via AdMob, compartilhado com o Google
-- Ranking online: autenticação pelo Google Play Games (gerenciada pelo Google)
+- Recordes, preferências e conquistas: armazenados somente no aparelho
 - Criptografado em trânsito: sim
 - O usuário pode solicitar exclusão: não se aplica ao ID de publicidade (pode redefinir/desativar no Android)
 
 ## Novidades da versão (release notes — 1.0.0)
 
 ```
-Primeira versão. Fases com modificadores, Desafio do Dia, ranking online,
-quatro cenários e controles de toque repensados.
+Primeira versão. Fases com modificadores, Desafio do Dia, ranking local,
+conquistas, quatro cenários e controles de toque repensados.
 ```
 
 ## Assets (nesta pasta)

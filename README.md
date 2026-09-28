@@ -6,7 +6,7 @@
 
 <img src="store-assets/feature-graphic.png" alt="Neon Blockfall" width="640" />
 
-**Jogo arcade de blocos que caem. Jogável offline; ranking online para disputar com amigos.**
+**Jogo arcade de blocos que caem, jogável offline, com quatro modos, conquistas e ranking local.**
 
 ![plataforma](https://img.shields.io/badge/plataforma-Android-3DDC84?logo=android&logoColor=white)
 ![Capacitor](https://img.shields.io/badge/Capacitor-7-119EFF?logo=capacitor&logoColor=white)
@@ -14,8 +14,8 @@
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
 ![vers%C3%A3o](https://img.shields.io/badge/vers%C3%A3o-1.0.0-8A2BE2)
-![idioma](https://img.shields.io/badge/idioma-pt--BR-2E8B57)
-![ranking](https://img.shields.io/badge/ranking-Google_Play_Games-EA4335?logo=googleplay&logoColor=white)
+![idiomas](https://img.shields.io/badge/idiomas-pt--BR_%7C_en--US_%7C_es--ES-2E8B57)
+![ranking](https://img.shields.io/badge/ranking-local-FF4FA3)
 ![licen%C3%A7a](https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-orange)
 
 Publicado por **x7rG ENTERPRISE™**
@@ -28,9 +28,9 @@ Publicado por **x7rG ENTERPRISE™**
 
 | Início | Partida (celular) | Partida (desktop) |
 | :---: | :---: | :---: |
-| <img src="screenshots/02-mobile-inicio.png" width="240" /> | <img src="screenshots/01-mobile-jogo.png" width="240" /> | <img src="screenshots/04-desktop-jogo.png" width="420" /> |
+| <img src="screenshots/02-mobile-inicio.png" alt="Seleção de modo no celular" width="240" /> | <img src="screenshots/01-mobile-jogo.png" alt="Partida do Neon Blockfall no celular" width="240" /> | <img src="screenshots/04-desktop-jogo.png" alt="Partida do Neon Blockfall no computador" width="420" /> |
 
-<div align="center"><img src="screenshots/03-mobile-reator.png" width="240" /></div>
+<div align="center"><img src="screenshots/03-mobile-reator.png" alt="Cenário Quantum Core no celular" width="240" /></div>
 
 ---
 
@@ -47,22 +47,34 @@ Publicado por **x7rG ENTERPRISE™**
 | Roteamento | **wouter** | 3 | Rotas mínimas (`/`, 404) |
 | Render da arena | **Canvas 2D** (nativo) | — | Grade, peças, ghost, partículas, shake, FX de cenário |
 | Áudio | **Web Audio API** (nativo) | — | Efeitos e trilha sintetizados em tempo real, sem assets |
-| Testes | **Vitest** | 2 | 21 testes das regras puras do jogo |
+| Testes | **Vitest** | 2 | 29 testes das regras puras e das sequências de jogo |
 | Formatação | **Prettier** | 3 | `pnpm format` |
 | Empacotamento | **Capacitor** | 7 | App Android nativo a partir do build web |
-| Anúncios | **@capacitor-community/admob** | 7 | Banner + intersticial (só no build nativo) |
+| Anúncios | **@capacitor-community/admob** | 7 | Banner, intersticial e vídeo premiado no build nativo |
 | Gerenciador de pacotes | **pnpm** | 10 | `node-linker=hoisted` (drive exFAT) |
 | CI | **GitHub Actions** | — | APK de teste + AAB assinado na nuvem |
-| Ranking online | **Google Play Games Services** | — | Placar global e de amigos (login com conta Google) |
+| Persistência | **localStorage** | — | Partida, preferências, ranking local, conquistas e sequências |
 
 Sem engine 3D, sem backend próprio, sem framework de UI pesado. O núcleo do jogo
 (`client/src/game/`) é **TypeScript puro**, sem depender de React nem do canvas —
-por isso dá para testá-lo isoladamente com Vitest. O jogo funciona **offline**; o
-**ranking online** usa o Google Play Games (não há servidor próprio).
+por isso dá para testá-lo isoladamente com Vitest. O jogo funciona **offline**, não
+possui servidor próprio e mantém o progresso e os recordes no próprio aparelho.
 
 ---
 
 ## Scripts
+
+Requer **Node.js 20.19+ ou 22.12+** e **pnpm 10**.
+
+```bash
+git clone https://github.com/xx7rg/neon-blockfall.git
+cd neon-blockfall
+pnpm install
+pnpm dev
+```
+
+O Vite informa o endereço local no terminal. Para testar em outro aparelho na
+mesma rede, use `pnpm dev --host`.
 
 | Comando | Ação |
 | --- | --- |
@@ -93,8 +105,12 @@ por isso dá para testá-lo isoladamente com Vitest. O jogo funciona **offline**
   `BLACKOUT` (as 3 linhas de baixo no escuro). **Checkpoints** nas fases múltiplas de 5.
 - **Desafio do Dia:** semente fixa — mesma sequência de peças para todo mundo no dia —
   com melhor pontuação do dia salva no aparelho e botão de compartilhar.
-- **Ranking online:** placar global e **de amigos** via Google Play Games (o jogador
-  entra com a conta Google que já tem no aparelho). Placar local no aparelho como base.
+- **Ranking local:** guarda as 10 melhores partidas no aparelho e permite filtrar
+  os resultados pelos quatro cenários.
+- **Quatro modos:** Sem fim, Desafio do Dia, Sprint de 100 linhas e Ultra de 2 minutos.
+- **Progressão local:** sequência de dias jogados e 9 conquistas salvas no aparelho.
+- **Idiomas:** interface em português do Brasil, inglês e espanhol, com detecção
+  automática e escolha manual nas configurações.
 - **Cenários** visuais (Mega City, Orbital Ring, Quantum Core, Data Vault) com efeitos
   de fundo próprios; não alteram a física.
 - **Lock delay** (~0,5 s, com reset ao mover) e **DAS/ARR** no teclado e no toque.
@@ -173,6 +189,8 @@ flowchart TD
         TOUCH["touch-controls.ts"]
         SCEN["scenarios.ts"]
         LB["local-leaderboard.ts (localStorage)"]
+        MODES["modes.ts"]
+        PROG["achievements.ts + streaks.ts"]
     end
 
     subgraph NATIVE["Capacitor — só no APK (no-op na web)"]
@@ -186,10 +204,12 @@ flowchart TD
     GC --> CTRL
     GC --> TOUCH
     GC --> SCEN
+    GC --> MODES
     GC --> SFX
     GC --> MUSIC
     GC --> HAPT
     HOME --> LB
+    HOME --> PROG
     HOME --> SCEN
     HOME --> NAT
 ```
@@ -238,9 +258,7 @@ Actions** (sem Android Studio local).
    `ANDROID_KEY_PASSWORD`.
 4. **Gerar o `.aab`** — aba **Actions → Android AAB (release assinado) → Run
    workflow**. O artefato `neon-blockfall-release-aab` é o que sobe na Play Console.
-5. **Play Games Services** — no console do Play Games, vincular o app, criar o
-   leaderboard e cadastrar o **SHA-1** do keystore. O ID do leaderboard vai no código.
-6. **Ficha da loja** — textos, ícone 512, feature graphic e checklist de
+5. **Ficha da loja** — textos, ícone 512, feature graphic e checklist de
    classificação/Data Safety prontos em
    [`store-assets/play-store-listing.md`](store-assets/play-store-listing.md).
    Política de privacidade pública:
@@ -252,15 +270,15 @@ Actions** (sem Android Studio local).
 
 ## Privacidade
 
-O jogo em si não coleta dados pessoais e é jogável offline. Dois pontos usam
-serviços do Google:
+O jogo em si não coleta dados pessoais, não exige conta e é jogável offline. O
+serviço externo usado pelo aplicativo é o Google AdMob:
 
 - **Anúncios (AdMob):** o build nativo exibe anúncios que processam dados de
   publicidade do dispositivo. Em regiões que exigem consentimento, o app mostra o
   formulário do UMP antes de anúncios personalizados.
-- **Ranking online (Play Games):** ao entrar no placar de amigos, o jogador se
-  autentica com a conta Google do aparelho; o Google gerencia essa identidade e a
-  pontuação enviada.
+
+Ranking, conquistas, sequências e preferências permanecem no armazenamento local
+do aparelho e não são enviados para um servidor da x7rG.
 
 Detalhes e base legal (LGPD) em
 [`client/public/privacy.html`](client/public/privacy.html).
