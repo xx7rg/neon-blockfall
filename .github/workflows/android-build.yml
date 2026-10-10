@@ -4,7 +4,7 @@ name: Android APK (debug)
 # Depois do build, baixe o artefato "neon-blockfall-debug-apk" e instale no
 # celular (ative "Fontes desconhecidas").
 # Este APK usa o App ID real do AdMob (senão o app fecha ao abrir) mas ANÚNCIOS
-# DE TESTE (pnpm build => modo normal => IS_TESTING=true). Pode tocar à vontade.
+# DE TESTE (pnpm build:debug => IS_TESTING=true). Pode tocar à vontade.
 # O build de produção (anúncios reais) é `pnpm android:release` / bundleRelease.
 # NÃO é assinado para a Play Store.
 
@@ -41,7 +41,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build web
-        run: pnpm build
+        run: pnpm build:debug
 
       - name: Add Android platform
         run: npx cap add android

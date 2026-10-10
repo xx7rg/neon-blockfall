@@ -74,7 +74,7 @@ jobs:
 
       - name: Apply native tweaks (AdMob, versão, signingConfig)
         env:
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_CODE: "6"
         run: node scripts/android-postsync.mjs
 
       - name: Point Gradle at the SDK

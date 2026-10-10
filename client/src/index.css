@@ -937,6 +937,8 @@ body.has-ad-banner .control-deck { bottom: calc(var(--ad-banner-h) + env(safe-ar
   font-weight: 700 !important;
 }
 .state-overlay strong { font-size: clamp(30px, 7vw, 42px) !important; }
+.state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: min(100% - 20px, 420px); }
+.state-overlay .state-actions .action-button { flex: 1 1 140px; min-width: 0; }
 
 /* Desktop/tablet: uma largura só para tudo — topbar, arena, HUD e dock alinhados.
    FIX-029: mesma exclusão de paisagem curta do bloco acima. */

@@ -1,6 +1,7 @@
 {
   "name": "neon-blockfall",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "androidVersionCode": 6,
   "private": true,
   "type": "module",
   "description": "Jogo arcade de blocos que caem, jogável offline, com modos variados, conquistas e ranking local. Publicado por x7rG ENTERPRISE™.",
@@ -8,16 +9,17 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --mode androidrelease",
+    "build:debug": "vite build --mode androiddebug",
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
     "assets": "npx -y @capacitor/assets@3 generate --android --iconBackgroundColor \"#050914\" --iconBackgroundColorDark \"#050914\" --splashBackgroundColor \"#050914\" --splashBackgroundColorDark \"#050914\"",
-    "cap:sync": "vite build && cap sync && node scripts/android-postsync.mjs",
+    "cap:sync": "pnpm build && cap sync android && node scripts/android-postsync.mjs",
     "android:add": "cap add android && pnpm assets",
-    "android:open": "vite build && cap sync && pnpm assets && node scripts/android-postsync.mjs && cap open android",
-    "android:release": "vite build --mode androidrelease && cap sync && pnpm assets && node scripts/android-postsync.mjs && cap open android"
+    "android:open": "pnpm cap:sync && pnpm assets && cap open android",
+    "android:release": "pnpm cap:sync && pnpm assets && cap open android"
   },
   "dependencies": {
     "@capacitor-community/admob": "^7.0.3",

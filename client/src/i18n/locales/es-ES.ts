@@ -131,6 +131,7 @@ export const esES: Dictionary = {
   "state.title.paused": "EN PAUSA",
   "state.restartDaily": "REPETIR RETO",
   "state.restartRun": "REINICIAR PARTIDA",
+  "state.mainMenu": "Menú principal",
   "state.exitDaily": "VOLVER A PARTIDA LIBRE",
   "state.noRecordYet": "AÚN SIN RÉCORD",
   "state.newPersonalRecord": "¡NUEVO RÉCORD PERSONAL!",

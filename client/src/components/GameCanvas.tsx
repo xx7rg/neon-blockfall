@@ -620,7 +620,7 @@ export default function GameCanvas({
 
     // --- keyboard ---
     const onKeyDown = (event: KeyboardEvent) => {
-      if (listeningForControlRef.current || settingsOpenRef.current) return;
+      if (preStartRef.current || listeningForControlRef.current || settingsOpenRef.current) return;
       const world = gameRef.current?.world;
       if (!world) return;
       const key = event.key === " " ? " " : event.key.toLowerCase();
@@ -736,6 +736,34 @@ export default function GameCanvas({
     if (world && !settingsOpenRef.current) world.setPaused(false);
   };
 
+  const returnToMainMenu = () => {
+    if (!gameRef.current?.world.snapshot.gameOver) return;
+    // Keep the finalized world and notification guard until Start creates a new run.
+    // Opening the menu must neither restart gameplay nor record the result again.
+    preStartRef.current = true;
+    if (launchTimerRef.current !== undefined) window.clearTimeout(launchTimerRef.current);
+    launchTimerRef.current = undefined;
+    if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = undefined;
+    if (gestureTimerRef.current !== undefined) window.clearTimeout(gestureTimerRef.current);
+    gestureTimerRef.current = undefined;
+    endPhaseTransition();
+    pendingGameOverRef.current = null;
+    setReviveOpen(false);
+    setReviveBusy(false);
+    setReviveCountdown(REVIVE_COUNTDOWN_S);
+    setLaunching(false);
+    setJustResumed(false);
+    setResetArmed(false);
+    setGestureFeedback(null);
+    setBurst(null);
+    setDailyResult(null);
+    setDailyShared(false);
+    setIsNewRecord(false);
+    setModeOutcome(null);
+    setPreStartOpen(true);
+  };
+
   const startRun = () => {
     if (launching) return;
     setLaunching(true);
@@ -765,6 +793,7 @@ export default function GameCanvas({
   };
 
   const onAction = (action: Action) => {
+    if (preStartRef.current) return;
     if (action === "restart") {
       clearSavedRun();
       setIsNewRecord(false);
@@ -821,6 +850,7 @@ export default function GameCanvas({
 
   // Reiniciar exige toque duplo (evita reset acidental durante a partida).
   const handleResetTap = () => {
+    if (preStartRef.current) return;
     if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
     if (resetArmed) {
       setResetArmed(false);
@@ -1394,24 +1424,31 @@ export default function GameCanvas({
                   : null}
             </p>
           )}
-          <button
-            type="button"
-            className="action-button"
-            onClick={() => {
-              setJustResumed(false);
-              onAction(snapshot.gameOver ? "restart" : "pause");
-            }}
-          >
-            {snapshot.gameOver ? (
-              <>
-                <RotateCcw size={16} /> {dailyMode ? t("state.restartDaily") : t("state.restartRun")}
-              </>
-            ) : (
-              <>
-                <Play size={16} /> {justResumed ? t("common.continue") : t("common.resume")}
-              </>
+          <div className={snapshot.gameOver ? "state-actions" : undefined}>
+            <button
+              type="button"
+              className="action-button"
+              onClick={() => {
+                setJustResumed(false);
+                onAction(snapshot.gameOver ? "restart" : "pause");
+              }}
+            >
+              {snapshot.gameOver ? (
+                <>
+                  <RotateCcw size={16} /> {dailyMode ? t("state.restartDaily") : t("state.restartRun")}
+                </>
+              ) : (
+                <>
+                  <Play size={16} /> {justResumed ? t("common.continue") : t("common.resume")}
+                </>
+              )}
+            </button>
+            {snapshot.gameOver && (
+              <button type="button" className="action-button" onClick={returnToMainMenu}>
+                {t("state.mainMenu")}
+              </button>
             )}
-          </button>
+          </div>
           {snapshot.gameOver && dailyMode && (
             <button type="button" className="state-ghost-button" onClick={exitDaily}>
               {t("state.exitDaily")}

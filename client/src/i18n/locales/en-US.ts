@@ -131,6 +131,7 @@ export const enUS: Dictionary = {
   "state.title.paused": "PAUSED",
   "state.restartDaily": "REPLAY CHALLENGE",
   "state.restartRun": "RESTART RUN",
+  "state.mainMenu": "Main Menu",
   "state.exitDaily": "BACK TO FREE PLAY",
   "state.noRecordYet": "NO RECORD YET",
   "state.newPersonalRecord": "NEW PERSONAL BEST!",

@@ -130,6 +130,7 @@ export const ptBR = {
   "state.title.paused": "EM PAUSA",
   "state.restartDaily": "REPETIR DESAFIO",
   "state.restartRun": "REINICIAR RUN",
+  "state.mainMenu": "Menu principal",
   "state.exitDaily": "VOLTAR À PARTIDA LIVRE",
   "state.noRecordYet": "SEM RECORDE AINDA",
   "state.newPersonalRecord": "NOVO RECORDE PESSOAL!",

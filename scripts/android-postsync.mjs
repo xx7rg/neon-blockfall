@@ -3,7 +3,7 @@
 // re-aplicados aqui de forma idempotente:
 //   1. AdMob APPLICATION_ID + flags de otimização no AndroidManifest
 //      (sem o App ID o app fecha ao abrir)
-//   2. versionCode / versionName vindos do package.json (+ env ANDROID_VERSION_CODE)
+//   2. versionCode / versionName explícitos no package.json (CI deve usar o mesmo code)
 //   3. signingConfig de release lendo android/keystore.properties, se existir
 //      (o CI escreve esse arquivo a partir dos segredos; sem ele, nada muda)
 //   4. compileSdkVersion/targetSdkVersion do template do Capacitor (35) sobem
@@ -14,6 +14,16 @@
 // Se a pasta android/ não existir, não faz nada.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
+const versionName = pkg.version;
+const versionCode = pkg.androidVersionCode;
+if (typeof versionName !== "string" || !versionName || !Number.isInteger(versionCode) || versionCode <= 0) {
+  throw new Error("package.json deve definir version e androidVersionCode inteiro positivo.");
+}
+if (process.env.ANDROID_VERSION_CODE !== undefined && Number(process.env.ANDROID_VERSION_CODE) !== versionCode) {
+  throw new Error("ANDROID_VERSION_CODE diverge do androidVersionCode aprovado no package.json.");
+}
 
 const ADMOB_APP_ID = "ca-app-pub-2635930849231174~7000204339";
 const ANDROID_TARGET_SDK = 36;
@@ -54,12 +64,6 @@ if (existsSync(MANIFEST)) {
 
 /* ---------- 2 + 3. app/build.gradle: versão + assinatura de release ---------- */
 if (existsSync(APP_GRADLE)) {
-  const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
-  const versionName = pkg.version || "1.0.0";
-  // versionCode: ANDROID_VERSION_CODE (CI) ou derivado do semver (1.2.3 -> 10203)
-  const [maj = 0, min = 0, pat = 0] = versionName.split(".").map((n) => parseInt(n, 10) || 0);
-  const versionCode = Number(process.env.ANDROID_VERSION_CODE) || maj * 10000 + min * 100 + pat;
-
   let g = readFileSync(APP_GRADLE, "utf8");
   const before = g;
 
