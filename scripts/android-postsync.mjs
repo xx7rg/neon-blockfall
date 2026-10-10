@@ -113,6 +113,7 @@ if (existsSync(VARIABLES_GRADLE)) {
   let v = readFileSync(VARIABLES_GRADLE, "utf8");
   const before = v;
 
+  v = v.replace(/minSdkVersion\s*=\s*\d+/, "minSdkVersion = 24");
   v = v.replace(/compileSdkVersion\s*=\s*\d+/, `compileSdkVersion = ${ANDROID_TARGET_SDK}`);
   v = v.replace(/targetSdkVersion\s*=\s*\d+/, `targetSdkVersion = ${ANDROID_TARGET_SDK}`);
 
