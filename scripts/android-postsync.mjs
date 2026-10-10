@@ -26,8 +26,6 @@ if (process.env.ANDROID_VERSION_CODE !== undefined && Number(process.env.ANDROID
 }
 
 const ADMOB_APP_ID = "ca-app-pub-2635930849231174~7000204339";
-// Google Play Automatic Protection requires Android 7.0 (API 24) or newer.
-const ANDROID_MIN_SDK = 24;
 const ANDROID_TARGET_SDK = 36;
 const ANDROID_DIR = resolve("android");
 const MANIFEST = resolve(ANDROID_DIR, "app/src/main/AndroidManifest.xml");
@@ -110,18 +108,17 @@ if (existsSync(APP_GRADLE)) {
   }
 }
 
-/* ---------- 4. variables.gradle: minSdkVersion/compileSdkVersion/targetSdkVersion ---------- */
+/* ---------- 4. variables.gradle: compileSdkVersion/targetSdkVersion ---------- */
 if (existsSync(VARIABLES_GRADLE)) {
   let v = readFileSync(VARIABLES_GRADLE, "utf8");
   const before = v;
 
-  v = v.replace(/minSdkVersion\s*=\s*\d+/, `minSdkVersion = ${ANDROID_MIN_SDK}`);
   v = v.replace(/compileSdkVersion\s*=\s*\d+/, `compileSdkVersion = ${ANDROID_TARGET_SDK}`);
   v = v.replace(/targetSdkVersion\s*=\s*\d+/, `targetSdkVersion = ${ANDROID_TARGET_SDK}`);
 
   if (v !== before) {
     writeFileSync(VARIABLES_GRADLE, v);
-    console.log(`[android-postsync] variables.gradle: minSdkVersion = ${ANDROID_MIN_SDK}, compile/targetSdkVersion = ${ANDROID_TARGET_SDK}.`);
+    console.log(`[android-postsync] variables.gradle: compile/targetSdkVersion = ${ANDROID_TARGET_SDK}.`);
   } else {
     console.log("[android-postsync] variables.gradle: já estava atualizado.");
   }
