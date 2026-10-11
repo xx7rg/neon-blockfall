@@ -1,7 +1,7 @@
 {
   "name": "neon-blockfall",
   "version": "1.0.1",
-  "androidVersionCode": 6,
+  "androidVersionCode": 7,
   "private": true,
   "type": "module",
   "description": "Jogo arcade de blocos que caem, jogável offline, com modos variados, conquistas e ranking local. Publicado por x7rG ENTERPRISE™.",
